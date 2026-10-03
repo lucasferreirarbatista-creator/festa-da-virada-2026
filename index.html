@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071a3d" />
+    <meta
+      name="description"
+      content="Inscrições e escolha de lugares para a Festa da Virada da Igreja Batista Atos."
+    />
+    <title>Festa da Virada · Igreja Batista Atos</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#inicio" aria-label="Festa da Virada — início">
+        <strong>Festa da Virada</strong>
+        <span>Igreja Batista Atos</span>
+      </a>
+      <button class="organization-link" type="button" disabled title="Disponível em uma próxima etapa">
+        Organização
+      </button>
+    </header>
+
+    <main>
+      <section id="landing" aria-label="Apresentação do evento">
+        <div class="hero" id="inicio">
+          <div class="hero-content">
+            <p class="eyebrow">Igreja Batista Atos</p>
+            <h1>Festa da <em>Virada</em></h1>
+            <p class="hero-copy">Uma noite de gratidão, comunhão e esperança para receber o novo ano juntos.</p>
+
+            <dl class="event-facts">
+              <div><dt>Data</dt><dd>31 de dezembro de 2026</dd></div>
+              <div><dt>Horário</dt><dd>A confirmar</dd></div>
+              <div><dt>Local</dt><dd>Salão Triunfo · Ipatinga/MG</dd></div>
+            </dl>
+
+            <button class="primary-button hero-button" id="start-button" type="button">Escolher meus lugares</button>
+            <p class="capacity">400 lugares · 50 mesas</p>
+          </div>
+        </div>
+
+        <section class="intro-section">
+          <p class="eyebrow dark">Uma noite para celebrar</p>
+          <h2>Ceia, comunhão e gratidão</h2>
+          <p>Um ambiente acolhedor e preparado para toda a família receber o novo ano em unidade.</p>
+        </section>
+
+        <section class="pricing-section" aria-labelledby="pricing-title">
+          <div class="section-heading">
+            <p class="eyebrow dark">Inscrições</p>
+            <h2 id="pricing-title">Valores por participante</h2>
+            <p>A categoria é calculada pela idade em 31 de dezembro de 2026.</p>
+          </div>
+
+          <div class="price-grid">
+            <article class="price-card featured">
+              <span>A partir de 11 anos</span><h3>Inteira</h3><strong>R$ 180,00</strong><small>por participante</small>
+            </article>
+            <article class="price-card">
+              <span>De 6 a 10 anos</span><h3>Meia</h3><strong>R$ 90,00</strong><small>por participante</small>
+            </article>
+            <article class="price-card">
+              <span>Até 5 anos</span><h3>Gratuita</h3><strong>R$ 0,00</strong><small>com cadeira reservada</small>
+            </article>
+          </div>
+          <p class="important-note"><strong>Importante:</strong> cada inscrição corresponde a uma cadeira, inclusive as gratuitas.</p>
+        </section>
+
+        <section class="steps-section">
+          <div>
+            <p class="eyebrow dark">Inscrição</p>
+            <h2>Como funciona</h2>
+          </div>
+          <ol>
+            <li><span>1</span><p><strong>Escolha</strong> as mesas e cadeiras no mapa.</p></li>
+            <li><span>2</span><p><strong>Informe</strong> os dados de cada participante.</p></li>
+            <li><span>3</span><p><strong>Confira</strong> o resumo e pague via Pix.</p></li>
+            <li><span>4</span><p><strong>Envie</strong> o comprovante e receba seu protocolo.</p></li>
+          </ol>
+        </section>
+      </section>
+
+      <section id="registration" class="registration" hidden aria-label="Inscrição para o evento">
+        <nav class="progress" aria-label="Etapas da inscrição">
+          <ol>
+            <li class="active"><span>1</span><small>Lugares</small></li>
+            <li><span>2</span><small>Participantes</small></li>
+            <li><span>3</span><small>Resumo</small></li>
+            <li><span>4</span><small>Pagamento</small></li>
+            <li><span>5</span><small>Conclusão</small></li>
+          </ol>
+        </nav>
+
+        <div class="registration-content">
+          <section id="step-seats" class="flow-step">
+            <div class="flow-heading">
+              <p class="eyebrow dark">Etapa 1 de 5</p>
+              <h2>Escolha seus lugares</h2>
+              <p>Selecione uma cadeira para cada participante. Você poderá escolher lugares em áreas diferentes.</p>
+            </div>
+
+            <div class="map-toolbar">
+              <div class="area-tabs" role="tablist" aria-label="Filtrar por área">
+                <button class="active" data-area="all" type="button">Todos</button>
+                <button data-area="salao" type="button">Salão</button>
+                <button data-area="varanda" type="button">Varanda</button>
+                <button data-area="expansao" type="button">Expansão</button>
+              </div>
+              <div class="zoom-controls" aria-label="Zoom do mapa">
+                <button id="zoom-out" type="button" aria-label="Diminuir mapa">−</button>
+                <button id="zoom-in" type="button" aria-label="Ampliar mapa">+</button>
+              </div>
+            </div>
+
+            <div class="seat-legend" aria-label="Legenda">
+              <span><i class="available"></i>Disponível</span>
+              <span><i class="selected"></i>Selecionada</span>
+              <span><i class="unavailable"></i>Indisponível</span>
+            </div>
+
+            <div class="map-viewport">
+              <div class="venue-map" id="venue-map">
+                <section class="zone zone-salao" data-zone="salao">
+                  <div class="zone-title"><h3>Salão principal</h3><span>32 mesas · 256 lugares</span></div>
+                  <div class="service-strip"><span>Cozinha e apoio</span><span>Bebidas</span></div>
+                  <div class="tables-grid salon-grid" id="salao-grid"></div>
+                </section>
+
+                <section class="zone zone-varanda" data-zone="varanda">
+                  <div class="zone-title"><h3>Varanda</h3><span>12 mesas · 96 lugares</span></div>
+                  <div class="dessert-table">Mesa de doces</div>
+                  <div class="tables-grid veranda-grid" id="varanda-grid"></div>
+                </section>
+
+                <section class="zone zone-expansao" data-zone="expansao">
+                  <div class="zone-title"><h3>Expansão coberta</h3><span>6 mesas · 48 lugares</span></div>
+                  <div class="expansion-features"><span>Estação de suco</span><span>Banda</span></div>
+                  <div class="tables-grid expansion-grid" id="expansao-grid"></div>
+                  <div class="tent">Tenda de brinquedos</div>
+                </section>
+              </div>
+            </div>
+
+            <div class="selection-panel">
+              <h3>Cadeiras selecionadas <span id="selection-count">(0)</span></h3>
+              <div id="selected-seats" class="selected-seat-list"><p class="empty-selection">Nenhuma cadeira selecionada.</p></div>
+            </div>
+          </section>
+
+          <section id="step-placeholder" class="flow-step placeholder-step" hidden>
+            <p class="eyebrow dark">Próxima etapa</p>
+            <h2>Participantes</h2>
+            <p>A estrutura visual está pronta. Os formulários, cálculos e banco de dados entram na próxima implementação.</p>
+          </section>
+        </div>
+
+        <footer class="registration-footer">
+          <div><small id="footer-seat-count">0 cadeiras</small><strong id="footer-total">R$ 0,00</strong></div>
+          <button class="primary-button" id="continue-button" type="button" disabled>Avançar</button>
+        </footer>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="brand inverse"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></div>
+      <div><strong>Organização</strong><p>Contatos oficiais em breve.</p></div>
+      <div><strong>Privacidade</strong><p>Os dados serão utilizados somente para a organização do evento.</p></div>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
