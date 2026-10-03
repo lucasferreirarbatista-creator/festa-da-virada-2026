@@ -9,7 +9,7 @@ const AREAS = {
 const state = {
   step: 1,
   selectedSeats: new Set(),
-  unavailableSeats: new Set(["S05-01", "V04-02"]),
+  unavailableSeats: new Set(),
   zoom: 1,
   participants: {},
 };
