@@ -8,13 +8,15 @@ Aplicação web para inscrição, escolha de cadeiras e conferência de pagament
 - Croqui com 50 mesas e 400 cadeiras.
 - Divisão em Salão, Varanda e Expansão coberta.
 - Seleção de cadeiras e filtros por área.
-- Estrutura visual das cinco etapas.
+- Formulários do responsável e dos participantes.
+- Cálculo de idade, categoria e preço.
+- Resumo da inscrição e total.
+- Estrutura inicial do Supabase em `supabase/migrations`.
 
 ## Próximas etapas
 
-- Formulários de responsável e participantes.
-- Cálculo de idade e preços.
-- Integração com Supabase.
+- Executar a migração inicial no Supabase.
+- Conectar a aplicação ao Supabase.
 - Reserva temporária e sincronização em tempo real.
 - Pix, comprovantes e protocolo.
 - Área administrativa da organização.
