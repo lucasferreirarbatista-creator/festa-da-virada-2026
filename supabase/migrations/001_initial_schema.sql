@@ -316,11 +316,20 @@ begin
     'total_amount', r.total_amount,
     'expires_at', r.expires_at,
     'seats', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'code', s.code, 'name', rs.participant_name, 'category', rs.price_category, 'price', rs.price
-      ) order by s.code)
-      from public.reservation_seats rs join public.seats s on s.id = rs.seat_id
-      where rs.reservation_id = r.id
+      select jsonb_agg(seat_item order by seat_code)
+      from (
+        select
+          s.code as seat_code,
+          jsonb_build_object(
+            'code', s.code,
+            'name', rs.participant_name,
+            'category', rs.price_category,
+            'price', rs.price
+          ) as seat_item
+        from public.reservation_seats rs
+        join public.seats s on s.id = rs.seat_id
+        where rs.reservation_id = r.id
+      ) reservation_items
     ), '[]'::jsonb)
   ) into result
   from public.reservations r
