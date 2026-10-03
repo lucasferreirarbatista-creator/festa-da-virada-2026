@@ -150,16 +150,60 @@
             </div>
           </section>
 
-          <section id="step-placeholder" class="flow-step placeholder-step" hidden>
-            <p class="eyebrow dark">Próxima etapa</p>
-            <h2>Participantes</h2>
-            <p>A estrutura visual está pronta. Os formulários, cálculos e banco de dados entram na próxima implementação.</p>
+          <section id="step-participants" class="flow-step" hidden>
+            <div class="flow-heading">
+              <p class="eyebrow dark">Etapa 2 de 5</p>
+              <h2>Participantes</h2>
+              <p>Informe o responsável pela inscrição e quem ocupará cada cadeira selecionada.</p>
+            </div>
+
+            <form id="participants-form" novalidate>
+              <fieldset class="form-card buyer-card">
+                <legend>Responsável pela inscrição</legend>
+                <div class="form-grid">
+                  <label>Nome completo<input id="buyer-name" name="buyerName" autocomplete="name" required /></label>
+                  <label>CPF<input id="buyer-cpf" name="buyerCpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" required /></label>
+                  <label>WhatsApp<input id="buyer-whatsapp" name="buyerWhatsapp" inputmode="tel" placeholder="(31) 90000-0000" maxlength="15" required /></label>
+                  <label>E-mail<input id="buyer-email" name="buyerEmail" type="email" autocomplete="email" required /></label>
+                </div>
+              </fieldset>
+              <div id="participant-cards" class="participant-cards"></div>
+              <div id="form-errors" class="form-errors" role="alert" hidden></div>
+            </form>
+          </section>
+
+          <section id="step-summary" class="flow-step" hidden>
+            <div class="flow-heading">
+              <p class="eyebrow dark">Etapa 3 de 5</p>
+              <h2>Confira sua inscrição</h2>
+              <p>Revise os participantes e os valores antes de reservar as cadeiras.</p>
+            </div>
+            <div class="summary-card">
+              <div id="summary-buyer" class="summary-buyer"></div>
+              <div class="summary-table-wrap">
+                <table class="summary-table">
+                  <thead><tr><th>Cadeira</th><th>Participante</th><th>Categoria</th><th>Valor</th></tr></thead>
+                  <tbody id="summary-items"></tbody>
+                  <tfoot><tr><th colspan="3">Total</th><td id="summary-total">R$ 0,00</td></tr></tfoot>
+                </table>
+              </div>
+              <p class="important-note">As cadeiras serão bloqueadas por 15 minutos quando a integração com o banco de dados for ativada.</p>
+            </div>
+          </section>
+
+          <section id="step-payment" class="flow-step placeholder-step" hidden>
+            <p class="eyebrow dark">Etapa 4 de 5</p>
+            <h2>Pagamento</h2>
+            <p>O fluxo e os valores estão validados. O Pix, a reserva temporária e o envio do comprovante serão conectados ao Supabase na próxima etapa.</p>
           </section>
         </div>
 
         <footer class="registration-footer">
           <div><small id="footer-seat-count">0 cadeiras</small><strong id="footer-total">R$ 0,00</strong></div>
-          <button class="primary-button" id="continue-button" type="button" disabled>Avançar</button>
+          <div class="footer-actions">
+            <button class="text-button" id="back-button" type="button" hidden>Voltar</button>
+            <button class="primary-button" id="continue-button" type="button" disabled>Avançar</button>
+          </div>
         </footer>
       </section>
     </main>
