@@ -99,6 +99,9 @@ button { cursor: pointer; }
 .seat-legend i { width: .9rem; height: .9rem; border: 1px solid var(--navy); border-radius: 50%; }
 .seat-legend i.selected { border-color: var(--gold); background: var(--gold); }
 .seat-legend i.unavailable { border-color: #c3c9d3; background: #c3c9d3; }
+.database-status { margin: 0 0 .85rem; padding: .65rem .8rem; border-radius: .7rem; color: #6b5a31; background: #fff5dd; font-size: .75rem; }
+.database-status[data-type="success"] { color: #1d6346; background: #e9f7ef; }
+.database-status[data-type="error"] { color: #8b3030; background: #fff0f0; }
 .map-viewport { overflow: auto; max-height: 620px; border: 1px solid var(--line); border-radius: 1.3rem; background: white; box-shadow: var(--shadow); }
 .venue-map { --map-scale: 1; display: grid; grid-template-columns: minmax(690px, 2fr) minmax(340px, 1fr); grid-template-areas: "salao varanda" "salao expansao"; gap: .8rem; width: 1100px; padding: .8rem; transform: scale(var(--map-scale)); transform-origin: top left; }
 .zone { position: relative; padding: .85rem; border: 1px solid #b8c0cf; border-radius: .55rem; background: #fcfdff; }
@@ -168,8 +171,14 @@ button { cursor: pointer; }
 .summary-table th:last-child, .summary-table td:last-child { text-align: right; }
 .summary-table tfoot th, .summary-table tfoot td { border-bottom: 0; font: 700 1.05rem/1.2 Georgia, serif; }
 .summary-card > .important-note { margin: 1rem; max-width: none; border-radius: .8rem; }
-.placeholder-step { min-height: 60vh; display: grid; place-content: center; text-align: center; }
-.placeholder-step p:last-child { max-width: 560px; color: var(--muted); line-height: 1.6; }
+.payment-step { max-width: 850px; margin: auto; }
+.reservation-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1.5rem; overflow: hidden; border: 1px solid var(--gold); border-radius: 1rem; background: var(--gold); }
+.reservation-card div { display: grid; gap: .35rem; padding: 1.2rem; background: var(--navy); color: white; }
+.reservation-card small { color: var(--gold-light); font-size: .67rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.reservation-card strong { font: 400 1.4rem/1.2 Georgia, serif; }
+.payment-placeholder { margin-top: 1rem; padding: 2rem; border: 1px solid var(--line); border-radius: 1rem; text-align: center; background: white; box-shadow: var(--shadow); }
+.payment-placeholder h3 { margin: 0; font: 400 1.5rem/1.2 Georgia, serif; }
+.payment-placeholder p { max-width: 580px; margin: .75rem auto 0; color: var(--muted); line-height: 1.6; }
 .registration-footer { position: fixed; right: 0; bottom: 0; left: 0; z-index: 90; min-height: 4.7rem; padding: .65rem max(1.25rem, calc((100vw - 1000px) / 2)); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); background: rgb(255 255 255 / 96%); box-shadow: 0 -12px 25px rgb(7 26 61 / 7%); backdrop-filter: blur(12px); }
 .registration-footer div { display: flex; flex-direction: column; }
 .registration-footer small { color: var(--muted); }
@@ -188,6 +197,7 @@ button { cursor: pointer; }
   .event-facts div { padding: .75rem 1rem; }
   .price-grid, .steps-section, .site-footer { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
+  .reservation-card { grid-template-columns: 1fr; }
   .steps-section { gap: 2rem; }
   .steps-section ol { grid-template-columns: 1fr; }
   .intro-section, .pricing-section, .steps-section { padding-top: 3.5rem; padding-bottom: 3.5rem; }
