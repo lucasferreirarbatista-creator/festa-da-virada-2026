@@ -136,12 +136,12 @@ immutable
 set search_path = public
 as $$
 declare
-  cpf text := regexp_replace(coalesce(value, ''), '\\D', '', 'g');
+  cpf text := regexp_replace(coalesce(value, ''), '[^0-9]', '', 'g');
   total integer;
   digit integer;
   i integer;
 begin
-  if length(cpf) <> 11 or cpf ~ '^(\\d)\\1{10}$' then return false; end if;
+  if length(cpf) <> 11 or cpf = repeat(substring(cpf, 1, 1), 11) then return false; end if;
   total := 0;
   for i in 1..9 loop total := total + substring(cpf, i, 1)::int * (11 - i); end loop;
   digit := (total * 10) % 11;
@@ -161,7 +161,7 @@ language sql
 immutable
 set search_path = public
 as $$
-  select regexp_replace(coalesce(value, ''), '\\D', '', 'g') ~ '^[1-9][1-9]9[0-9]{8}$';
+  select regexp_replace(coalesce(value, ''), '[^0-9]', '', 'g') ~ '^[1-9][1-9]9[0-9]{8}$';
 $$;
 
 create or replace function public.expire_stale_reservations()
@@ -244,7 +244,7 @@ begin
     buyer_whatsapp, buyer_email, expires_at
   ) values (
     selected_event.id, new_protocol, digest(p_access_token, 'sha256'), trim(p_buyer_name),
-    regexp_replace(p_buyer_cpf, '\\D', '', 'g'), regexp_replace(p_buyer_whatsapp, '\\D', '', 'g'),
+    regexp_replace(p_buyer_cpf, '[^0-9]', '', 'g'), regexp_replace(p_buyer_whatsapp, '[^0-9]', '', 'g'),
     lower(trim(p_buyer_email)), now() + make_interval(mins => selected_event.hold_minutes)
   ) returning id into new_reservation_id;
 
@@ -280,8 +280,8 @@ begin
       birth_date, age_on_event, price_category, price
     ) values (
       new_reservation_id, selected_seat.id, trim(participant->>'name'),
-      regexp_replace(participant->>'cpf', '\\D', '', 'g'),
-      regexp_replace(participant->>'whatsapp', '\\D', '', 'g'),
+      regexp_replace(participant->>'cpf', '[^0-9]', '', 'g'),
+      regexp_replace(participant->>'whatsapp', '[^0-9]', '', 'g'),
       participant_birth, participant_age, participant_category, participant_price
     );
     update public.seats set status = 'held', updated_at = now() where id = selected_seat.id;
