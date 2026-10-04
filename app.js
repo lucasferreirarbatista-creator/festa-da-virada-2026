@@ -394,14 +394,14 @@ function reservationPayload(accessToken) {
     p_event_slug: CONFIG.eventSlug,
     p_access_token: accessToken,
     p_buyer_name: buyer.name,
-    p_buyer_cpf: buyer.cpf,
-    p_buyer_whatsapp: buyer.whatsapp,
+    p_buyer_cpf: digits(buyer.cpf),
+    p_buyer_whatsapp: digits(buyer.whatsapp),
     p_buyer_email: buyer.email,
     p_participants: selectedCodes().map((code) => ({
       seat_code: code,
       name: state.participants[code].name,
-      cpf: state.participants[code].cpf,
-      whatsapp: state.participants[code].whatsapp,
+      cpf: digits(state.participants[code].cpf),
+      whatsapp: digits(state.participants[code].whatsapp),
       birth_date: state.participants[code].birthDate,
     })),
   };
