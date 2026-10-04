@@ -1,4 +1,6 @@
 const EVENT_DATE = new Date("2026-12-31T12:00:00-03:00");
+const CONFIG = window.APP_CONFIG ?? {};
+const RESERVATION_STORAGE_KEY = "fv26_reservation_access";
 
 const AREAS = {
   salao: { prefix: "S", count: 32, grid: "salao-grid", label: "Salão principal" },
@@ -12,11 +14,75 @@ const state = {
   unavailableSeats: new Set(),
   zoom: 1,
   participants: {},
+  reservation: null,
+  busy: false,
+  connected: false,
 };
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const pad = (value) => String(value).padStart(2, "0");
 const digits = (value) => value.replace(/\D/g, "");
+
+async function supabaseRequest(path, options = {}) {
+  if (!CONFIG.supabaseUrl || !CONFIG.supabasePublishableKey) throw new Error("missing_supabase_config");
+  const response = await fetch(`${CONFIG.supabaseUrl}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: CONFIG.supabasePublishableKey,
+      Authorization: `Bearer ${CONFIG.supabasePublishableKey}`,
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+  const body = response.status === 204 ? null : await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = new Error(body?.message ?? body?.hint ?? `supabase_${response.status}`);
+    error.details = body;
+    throw error;
+  }
+  return body;
+}
+
+function setDatabaseStatus(message, type = "loading") {
+  const element = document.getElementById("database-status");
+  if (!element) return;
+  element.textContent = message;
+  element.dataset.type = type;
+}
+
+function applySeatStatuses(rows) {
+  const nextUnavailable = new Set(rows.filter((seat) => seat.status !== "available").map((seat) => seat.code));
+  state.unavailableSeats = nextUnavailable;
+  let selectionChanged = false;
+  document.querySelectorAll(".seat").forEach((button) => {
+    const unavailable = nextUnavailable.has(button.dataset.code);
+    if (unavailable && state.selectedSeats.has(button.dataset.code) && !state.reservation) {
+      state.selectedSeats.delete(button.dataset.code);
+      delete state.participants[button.dataset.code];
+      selectionChanged = true;
+    }
+    button.disabled = unavailable;
+    button.classList.toggle("selected", state.selectedSeats.has(button.dataset.code));
+    button.setAttribute("aria-pressed", String(state.selectedSeats.has(button.dataset.code)));
+    button.title = unavailable ? `Cadeira ${button.dataset.code} indisponível` : `Cadeira ${button.dataset.code}`;
+    button.setAttribute("aria-label", unavailable ? `Cadeira ${button.dataset.code} indisponível` : `Selecionar cadeira ${button.dataset.code}`);
+  });
+  if (selectionChanged) renderSelection();
+}
+
+async function loadSeatStatuses({ silent = false } = {}) {
+  if (!silent) setDatabaseStatus("Atualizando lugares disponíveis…");
+  try {
+    const rows = await supabaseRequest("seats?select=code,status&order=code.asc");
+    applySeatStatuses(rows ?? []);
+    state.connected = true;
+    setDatabaseStatus("Mapa atualizado em tempo real", "success");
+  } catch (error) {
+    state.connected = false;
+    setDatabaseStatus("Não foi possível atualizar as cadeiras. Tente novamente.", "error");
+    console.error("Seat status error", error);
+  }
+}
 
 function seatCode(area, tableNumber, seatNumber) {
   return `${AREAS[area].prefix}${pad(tableNumber)}-${pad(seatNumber)}`;
@@ -89,7 +155,7 @@ function toggleSeat(button) {
 }
 
 const selectedCodes = () => [...state.selectedSeats].sort();
-const currentTotal = () => Object.values(state.participants).reduce((sum, person) => sum + (person.price ?? 0), 0);
+const currentTotal = () => state.reservation?.total_amount ?? Object.values(state.participants).reduce((sum, person) => sum + (person.price ?? 0), 0);
 
 function renderSelection() {
   const seats = selectedCodes();
@@ -302,10 +368,10 @@ function updateFooter() {
 
 function updateProgress() {
   document.querySelectorAll(".progress li").forEach((item, index) => item.classList.toggle("active", index === state.step - 1));
-  document.getElementById("back-button").hidden = state.step === 1;
+  document.getElementById("back-button").hidden = state.step === 1 || (state.step === 4 && Boolean(state.reservation));
   const button = document.getElementById("continue-button");
-  button.textContent = state.step === 3 ? "Ir para pagamento" : "Avançar";
-  button.disabled = (state.step === 1 && state.selectedSeats.size === 0) || state.step === 4;
+  button.textContent = state.busy ? "Reservando…" : state.step === 3 ? "Reservar e pagar" : "Avançar";
+  button.disabled = state.busy || (state.step === 1 && state.selectedSeats.size === 0) || state.step === 4;
 }
 
 function showStep(step) {
@@ -316,10 +382,100 @@ function showStep(step) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function nextStep() {
+function createAccessToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+function reservationPayload(accessToken) {
+  const buyer = buyerData();
+  return {
+    p_event_slug: CONFIG.eventSlug,
+    p_access_token: accessToken,
+    p_buyer_name: buyer.name,
+    p_buyer_cpf: buyer.cpf,
+    p_buyer_whatsapp: buyer.whatsapp,
+    p_buyer_email: buyer.email,
+    p_participants: selectedCodes().map((code) => ({
+      seat_code: code,
+      name: state.participants[code].name,
+      cpf: state.participants[code].cpf,
+      whatsapp: state.participants[code].whatsapp,
+      birth_date: state.participants[code].birthDate,
+    })),
+  };
+}
+
+let countdownTimer;
+function startCountdown() {
+  clearInterval(countdownTimer);
+  const update = () => {
+    const countdown = document.getElementById("payment-countdown");
+    if (!countdown || !state.reservation) return;
+    const remaining = Math.max(0, new Date(state.reservation.expires_at).getTime() - Date.now());
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    countdown.textContent = `${pad(minutes)}:${pad(seconds)}`;
+    if (remaining === 0) {
+      clearInterval(countdownTimer);
+      countdown.textContent = "Expirada";
+      localStorage.removeItem(RESERVATION_STORAGE_KEY);
+      document.querySelector(".payment-placeholder h3").textContent = "Sua reserva expirou";
+      document.querySelector(".payment-placeholder p").textContent = "As cadeiras foram liberadas. Volte ao mapa para fazer uma nova seleção.";
+    }
+  };
+  update();
+  countdownTimer = setInterval(update, 1000);
+}
+
+function renderPayment() {
+  if (!state.reservation) return;
+  document.getElementById("payment-protocol").textContent = state.reservation.protocol;
+  document.getElementById("payment-total").textContent = money.format(Number(state.reservation.total_amount));
+  startCountdown();
+}
+
+function showReservationError(message) {
+  const box = document.getElementById("reservation-error");
+  box.hidden = !message;
+  box.textContent = message;
+}
+
+async function createReservation() {
+  state.busy = true;
+  updateProgress();
+  showReservationError("");
+  const accessToken = createAccessToken();
+  try {
+    const reservation = await supabaseRequest("rpc/create_hold", {
+      method: "POST",
+      body: JSON.stringify(reservationPayload(accessToken)),
+    });
+    state.reservation = reservation;
+    localStorage.setItem(RESERVATION_STORAGE_KEY, JSON.stringify({ accessToken }));
+    renderPayment();
+    showStep(4);
+  } catch (error) {
+    const rawMessage = error.message ?? "";
+    const unavailableCode = rawMessage.match(/unavailable:([A-Z]\d{2}-\d{2})/)?.[1];
+    if (unavailableCode) {
+      showReservationError(`A cadeira ${unavailableCode} acabou de ser reservada por outra pessoa. Volte ao mapa e escolha outra cadeira.`);
+      await loadSeatStatuses();
+    } else {
+      showReservationError("Não foi possível criar a reserva agora. Confira sua conexão e tente novamente.");
+    }
+    console.error("Reservation error", error);
+  } finally {
+    state.busy = false;
+    updateProgress();
+  }
+}
+
+async function nextStep() {
   if (state.step === 1) { renderParticipantCards(); showStep(2); return; }
   if (state.step === 2) { if (validateParticipants()) { renderSummary(); showStep(3); } return; }
-  if (state.step === 3) showStep(4);
+  if (state.step === 3) await createReservation();
 }
 
 function showRegistration() {
@@ -329,17 +485,47 @@ function showRegistration() {
   showStep(1);
 }
 
-function init() {
+async function restoreReservation() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(RESERVATION_STORAGE_KEY)); } catch { return; }
+  if (!saved?.accessToken) return;
+  try {
+    const reservation = await supabaseRequest("rpc/get_reservation", {
+      method: "POST",
+      body: JSON.stringify({ p_access_token: saved.accessToken }),
+    });
+    if (!reservation || reservation.status !== "held" || new Date(reservation.expires_at) <= new Date()) {
+      localStorage.removeItem(RESERVATION_STORAGE_KEY);
+      return;
+    }
+    state.reservation = reservation;
+    reservation.seats.forEach((seat) => {
+      state.selectedSeats.add(seat.code);
+      state.participants[seat.code] = { name: seat.name, category: seat.category, price: Number(seat.price) };
+    });
+    showRegistration();
+    renderPayment();
+    showStep(4);
+  } catch (error) {
+    localStorage.removeItem(RESERVATION_STORAGE_KEY);
+    console.error("Restore reservation error", error);
+  }
+}
+
+async function init() {
   renderMap();
   renderSelection();
   document.getElementById("start-button").addEventListener("click", showRegistration);
   document.querySelectorAll(".area-tabs button").forEach((button) => button.addEventListener("click", () => filterArea(button.dataset.area)));
   document.getElementById("zoom-in").addEventListener("click", () => setZoom(state.zoom + .1));
   document.getElementById("zoom-out").addEventListener("click", () => setZoom(state.zoom - .1));
-  document.getElementById("continue-button").addEventListener("click", nextStep);
+  document.getElementById("continue-button").addEventListener("click", () => { void nextStep(); });
   document.getElementById("back-button").addEventListener("click", () => { if (state.step > 1) showStep(state.step - 1); });
+  await loadSeatStatuses();
+  await restoreReservation();
+  setInterval(() => { if (!document.getElementById("registration").hidden) void loadSeatStatuses({ silent: true }); }, 60000);
 }
 
-init();
+void init();
 
 export { EVENT_DATE, calculateCategory, validCpf, validPhone };
