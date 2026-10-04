@@ -73,6 +73,13 @@ function applySeatStatuses(rows) {
 async function loadSeatStatuses({ silent = false } = {}) {
   if (!silent) setDatabaseStatus("Atualizando lugares disponíveis…");
   try {
+    // Best-effort cleanup keeps expired holds from appearing unavailable on an
+    // otherwise idle event. The database function is idempotent and only
+    // releases reservations whose server-side deadline has already passed.
+    await supabaseRequest("rpc/expire_stale_reservations", {
+      method: "POST",
+      body: "{}",
+    });
     const rows = await supabaseRequest("seats?select=code,status&order=code.asc");
     applySeatStatuses(rows ?? []);
     state.connected = true;
