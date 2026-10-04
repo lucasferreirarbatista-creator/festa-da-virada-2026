@@ -418,6 +418,8 @@ revoke all on public.admin_users, public.reservations, public.reservation_seats,
 grant select on public.events, public.event_tables, public.seats to anon, authenticated;
 grant execute on function public.create_hold(text,text,text,text,text,text,jsonb) to anon, authenticated;
 grant execute on function public.get_reservation(text) to anon, authenticated;
+revoke all on function public.expire_stale_reservations() from public;
+grant execute on function public.expire_stale_reservations() to anon, authenticated;
 revoke execute on function public.admin_release_all_seats(text) from public, anon;
 grant execute on function public.admin_release_all_seats(text) to authenticated;
 
