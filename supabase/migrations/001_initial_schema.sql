@@ -203,7 +203,7 @@ create or replace function public.create_hold(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   selected_event public.events%rowtype;
@@ -303,7 +303,7 @@ create or replace function public.get_reservation(p_access_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   result jsonb;
