@@ -15,7 +15,7 @@ create or replace function public.create_hold(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   selected_event public.events%rowtype;
