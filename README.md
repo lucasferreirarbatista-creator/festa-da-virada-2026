@@ -12,13 +12,15 @@ Aplicação web para inscrição, escolha de cadeiras e conferência de pagament
 - Cálculo de idade, categoria e preço.
 - Resumo da inscrição e total.
 - Estrutura inicial do Supabase em `supabase/migrations`.
+- Mapa conectado aos 400 lugares do Supabase.
+- Reserva transacional de cadeiras por 15 minutos.
+- Protocolo e retomada da reserva após recarregar a página.
 
 ## Próximas etapas
 
-- Executar a migração inicial no Supabase.
-- Conectar a aplicação ao Supabase.
-- Reserva temporária e sincronização em tempo real.
-- Pix, comprovantes e protocolo.
+- Configurar o Pix e o recebedor.
+- Implementar o envio privado do comprovante.
+- Criar a confirmação/cancelamento pela organização.
 - Área administrativa da organização.
 
 ## Visualização local
