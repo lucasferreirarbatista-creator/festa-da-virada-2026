@@ -225,7 +225,7 @@ begin
   if length(trim(coalesce(p_buyer_name, ''))) < 3 then raise exception 'invalid_buyer_name'; end if;
   if not public.is_valid_cpf(p_buyer_cpf) then raise exception 'invalid_buyer_cpf'; end if;
   if not public.is_valid_whatsapp(p_buyer_whatsapp) then raise exception 'invalid_buyer_whatsapp'; end if;
-  if coalesce(p_buyer_email, '') !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$' then raise exception 'invalid_buyer_email'; end if;
+  if trim(coalesce(p_buyer_email, '')) !~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+[.][A-Z]{2,}$' then raise exception 'invalid_buyer_email'; end if;
   if jsonb_typeof(p_participants) <> 'array' then raise exception 'invalid_participants'; end if;
 
   item_count := jsonb_array_length(p_participants);
