@@ -28,7 +28,8 @@ button { cursor: pointer; }
 .brand { display: flex; flex-direction: column; color: inherit; text-decoration: none; font-family: Georgia, "Times New Roman", serif; }
 .brand strong { font-size: 1.18rem; font-weight: 500; line-height: 1; }
 .brand span { margin-top: .28rem; color: var(--gold); font: 600 .65rem/1 ui-sans-serif, system-ui; letter-spacing: .18em; text-transform: uppercase; }
-.organization-link { border: 0; background: transparent; color: rgb(255 255 255 / 68%); font-size: .86rem; }
+.organization-link { border: 0; background: transparent; color: rgb(255 255 255 / 68%); font-size: .86rem; text-decoration: none; }
+.organization-link:hover { color: var(--gold); }
 
 .hero {
   min-height: 610px; display: grid; place-items: center; padding: 5.5rem 1.25rem 4rem; text-align: center; color: white;

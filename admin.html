@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071a3d" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Organização · Festa da Virada</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+  <body>
+    <header class="admin-header">
+      <a class="brand" href="./">
+        <strong>Festa da Virada</strong>
+        <span>Igreja Batista Atos</span>
+      </a>
+      <div id="admin-identity" class="admin-identity" hidden>
+        <span id="admin-name"></span>
+        <button id="logout-button" class="text-button" type="button">Sair</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="login-view" class="login-view">
+        <div class="login-card">
+          <p class="eyebrow">Área restrita</p>
+          <h1>Organização</h1>
+          <p class="login-copy">Acesse para conferir pagamentos e administrar as reservas da festa.</p>
+
+          <form id="login-form" novalidate>
+            <label>
+              E-mail
+              <input id="login-email" type="email" autocomplete="username" required />
+            </label>
+            <label>
+              Senha
+              <input id="login-password" type="password" autocomplete="current-password" minlength="6" required />
+            </label>
+            <p id="login-error" class="form-error" role="alert" hidden></p>
+            <button id="login-button" class="primary-button" type="submit">Entrar</button>
+          </form>
+          <a class="back-link" href="./">← Voltar ao site da festa</a>
+        </div>
+      </section>
+
+      <section id="dashboard-view" class="dashboard" hidden>
+        <div class="dashboard-heading">
+          <div>
+            <p class="eyebrow">Painel administrativo</p>
+            <h1>Reservas e pagamentos</h1>
+            <p>Acompanhe a ocupação, confira comprovantes e libere cadeiras quando necessário.</p>
+          </div>
+          <button id="refresh-button" class="secondary-button" type="button">Atualizar dados</button>
+        </div>
+
+        <section class="metrics" aria-label="Resumo do evento">
+          <article><span>Cadeiras confirmadas</span><strong id="metric-confirmed-seats">—</strong><small id="metric-capacity">de 400</small></article>
+          <article><span>Aguardando análise</span><strong id="metric-pending-seats">—</strong><small id="metric-pending-reservations">— reservas</small></article>
+          <article><span>Disponíveis</span><strong id="metric-available-seats">—</strong><small>cadeiras livres</small></article>
+          <article><span>Receita confirmada</span><strong id="metric-confirmed-revenue">—</strong><small id="metric-pending-revenue">— em análise</small></article>
+        </section>
+
+        <section class="reservations-section">
+          <div class="section-title">
+            <div>
+              <h2>Inscrições</h2>
+              <p id="results-summary">Carregando reservas…</p>
+            </div>
+          </div>
+
+          <div class="filters">
+            <label class="search-field">
+              <span>Buscar</span>
+              <input id="search-input" type="search" placeholder="Nome, protocolo, cadeira ou WhatsApp" />
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="status-filter">
+                <option value="all">Todos</option>
+                <option value="pending_review" selected>Aguardando análise</option>
+                <option value="confirmed">Confirmadas</option>
+                <option value="held">Em preenchimento</option>
+                <option value="cancelled">Canceladas</option>
+                <option value="rejected">Rejeitadas</option>
+                <option value="expired">Expiradas</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="reservations-loading" class="state-message">Carregando inscrições…</div>
+          <div id="reservations-empty" class="state-message" hidden>Nenhuma inscrição encontrada.</div>
+          <div id="reservations-list" class="reservations-list" aria-live="polite"></div>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="reservation-dialog" class="reservation-dialog">
+      <div class="dialog-shell">
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">Detalhes da inscrição</p>
+            <h2 id="dialog-protocol">—</h2>
+          </div>
+          <button id="dialog-close" class="icon-button" type="button" aria-label="Fechar">×</button>
+        </header>
+
+        <div id="dialog-loading" class="state-message">Carregando detalhes…</div>
+        <div id="dialog-content" hidden>
+          <section class="detail-grid" id="reservation-details"></section>
+
+          <section class="detail-section">
+            <div class="detail-section-heading">
+              <h3>Participantes e cadeiras</h3>
+            </div>
+            <div id="participants-list" class="participants-list"></div>
+          </section>
+
+          <section class="detail-section" id="proof-section">
+            <div class="detail-section-heading">
+              <h3>Comprovante</h3>
+              <button id="proof-button" class="secondary-button" type="button">Visualizar comprovante</button>
+            </div>
+            <p id="proof-description"></p>
+          </section>
+
+          <section class="detail-section" id="history-section">
+            <h3>Histórico</h3>
+            <div id="history-list" class="history-list"></div>
+          </section>
+
+          <section id="review-section" class="review-section">
+            <label>
+              Observação da organização <span>(opcional)</span>
+              <textarea id="review-notes" maxlength="500" rows="3" placeholder="Ex.: pagamento identificado no extrato."></textarea>
+            </label>
+            <div class="action-buttons">
+              <button id="confirm-button" class="success-button" type="button">Aprovar pagamento</button>
+              <button id="reject-button" class="danger-button" type="button">Rejeitar e liberar lugares</button>
+              <button id="cancel-button" class="secondary-button" type="button">Cancelar reserva</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="./config.js"></script>
+    <script src="./admin.js" defer></script>
+  </body>
+</html>

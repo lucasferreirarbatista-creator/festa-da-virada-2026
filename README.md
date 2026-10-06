@@ -19,15 +19,35 @@ Aplicação web para inscrição, escolha de cadeiras e conferência de pagament
 - Upload privado de comprovantes JPG, PNG e PDF de até 10 MB.
 - Finalização sem comprovante para inscrições totalmente gratuitas.
 - Status de aguardando conferência e tela final com protocolo.
+- Painel administrativo protegido por login em `admin.html`.
+- Indicadores de ocupação, valores confirmados e valores em análise.
+- Busca e filtros de inscrições por status.
+- Conferência privada de comprovantes e dados dos participantes.
+- Aprovação, rejeição e cancelamento com liberação automática das cadeiras.
+- Histórico das decisões administrativas.
 
 ## Próximas etapas
 
-- Criar a confirmação/cancelamento pela organização.
-- Área administrativa da organização.
+- Criar os usuários autorizados da equipe no Supabase Auth.
+- Configurar o primeiro usuário na tabela `admin_users`.
+- Validar o painel em produção com uma conta administrativa.
 
 ## Migrações
 
-Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do Supabase. Em uma base já configurada até a etapa anterior, execute apenas `006_payment_and_proof_flow.sql`.
+Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do Supabase. Em uma base já configurada até a etapa de pagamento, execute apenas `007_admin_panel.sql`.
+
+## Primeiro administrador
+
+1. Crie o usuário em **Authentication → Users → Add user** no Supabase.
+2. Copie o UUID do usuário criado.
+3. Execute no SQL Editor, substituindo os valores:
+
+```sql
+insert into public.admin_users (user_id, display_name)
+values ('UUID-DO-USUARIO', 'Nome da pessoa');
+```
+
+Depois, acesse `/admin.html` com o e-mail e a senha cadastrados.
 
 ## Visualização local
 
