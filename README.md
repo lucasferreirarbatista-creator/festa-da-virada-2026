@@ -15,13 +15,19 @@ Aplicação web para inscrição, escolha de cadeiras e conferência de pagament
 - Mapa conectado aos 400 lugares do Supabase.
 - Reserva transacional de cadeiras por 15 minutos.
 - Protocolo e retomada da reserva após recarregar a página.
+- Pix copia e cola com o valor exato da reserva e QR Code gerado no navegador.
+- Upload privado de comprovantes JPG, PNG e PDF de até 10 MB.
+- Finalização sem comprovante para inscrições totalmente gratuitas.
+- Status de aguardando conferência e tela final com protocolo.
 
 ## Próximas etapas
 
-- Configurar o Pix e o recebedor.
-- Implementar o envio privado do comprovante.
 - Criar a confirmação/cancelamento pela organização.
 - Área administrativa da organização.
+
+## Migrações
+
+Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do Supabase. Em uma base já configurada até a etapa anterior, execute apenas `006_payment_and_proof_flow.sql`.
 
 ## Visualização local
 

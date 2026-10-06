@@ -33,7 +33,7 @@
 
             <dl class="event-facts">
               <div><dt>Data</dt><dd>31 de dezembro de 2026</dd></div>
-              <div><dt>Horário</dt><dd>A confirmar</dd></div>
+              <div><dt>Horário</dt><dd>00h20</dd></div>
               <div><dt>Local</dt><dd>Salão Triunfo · Ipatinga/MG</dd></div>
             </dl>
 
@@ -205,9 +205,48 @@
               <div><small>Valor</small><strong id="payment-total">R$ 0,00</strong></div>
               <div><small>Tempo restante</small><strong id="payment-countdown">15:00</strong></div>
             </div>
-            <div class="payment-placeholder">
-              <h3>Pix ainda não configurado</h3>
-              <p>A reserva real já está funcionando. Na próxima etapa, incluiremos o QR Code, o código Pix e o envio do comprovante.</p>
+            <div class="payment-grid" id="payment-content">
+              <article class="payment-panel pix-panel" id="pix-panel">
+                <p class="eyebrow dark">Pague via Pix</p>
+                <h3>Escaneie ou copie o código</h3>
+                <div class="pix-qrcode" id="pix-qrcode" aria-label="QR Code Pix"></div>
+                <p class="pix-receiver">Recebedor: <strong id="pix-receiver"></strong></p>
+                <label class="pix-code-label" for="pix-code">Pix copia e cola</label>
+                <textarea id="pix-code" class="pix-code" readonly rows="3"></textarea>
+                <button class="secondary-button" id="copy-pix-button" type="button">Copiar código Pix</button>
+              </article>
+
+              <article class="payment-panel proof-panel" id="proof-panel">
+                <p class="eyebrow dark">Comprovante</p>
+                <h3 id="proof-title">Envie o comprovante</h3>
+                <p id="proof-instructions">Após pagar, anexe uma imagem ou PDF para a equipe conferir.</p>
+                <label class="upload-drop" id="upload-drop" for="proof-file">
+                  <input id="proof-file" type="file" accept="image/jpeg,image/png,application/pdf" />
+                  <span>Selecionar comprovante</span>
+                  <strong id="proof-file-name">Nenhum arquivo selecionado</strong>
+                  <small>JPG, PNG ou PDF · máximo de 10 MB</small>
+                </label>
+                <div id="payment-error" class="form-errors" role="alert" hidden></div>
+                <p class="security-note">Seu comprovante será armazenado de forma privada e acessível somente à equipe autorizada.</p>
+              </article>
+            </div>
+          </section>
+
+          <section id="step-conclusion" class="flow-step conclusion-step" hidden>
+            <div class="flow-heading">
+              <p class="eyebrow dark">Etapa 5 de 5</p>
+              <h2 id="conclusion-title">Comprovante recebido</h2>
+              <p id="conclusion-message">A equipe da Igreja Batista Atos fará a conferência do pagamento.</p>
+            </div>
+            <div class="conclusion-card">
+              <small>Protocolo da inscrição</small>
+              <strong id="conclusion-protocol">—</strong>
+              <span id="conclusion-status">Aguardando conferência</span>
+            </div>
+            <div class="conclusion-details">
+              <h3>Lugares reservados</h3>
+              <div id="conclusion-seats" class="selected-seat-list"></div>
+              <p>Guarde o protocolo. A confirmação será realizada pelos contatos informados na inscrição.</p>
             </div>
           </section>
         </div>
@@ -224,7 +263,7 @@
 
     <footer class="site-footer">
       <div class="brand inverse"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></div>
-      <div><strong>Organização</strong><p>Contatos oficiais em breve.</p></div>
+      <div><strong>Organização</strong><p>(31) 8741-7442<br>iba.igrejabatistaatos@gmail.com</p></div>
       <div><strong>Privacidade</strong><p>Os dados serão utilizados somente para a organização do evento.</p></div>
     </footer>
 

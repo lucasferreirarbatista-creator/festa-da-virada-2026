@@ -1,3 +1,6 @@
+import qrcode from "./vendor/qrcode.mjs";
+import { buildPixPayload } from "./pix.js";
+
 const EVENT_DATE = new Date("2026-12-31T12:00:00-03:00");
 const CONFIG = window.APP_CONFIG ?? {};
 const RESERVATION_STORAGE_KEY = "fv26_reservation_access";
@@ -15,6 +18,8 @@ const state = {
   zoom: 1,
   participants: {},
   reservation: null,
+  reservationAccessToken: null,
+  proofFile: null,
   busy: false,
   connected: false,
 };
@@ -37,6 +42,31 @@ async function supabaseRequest(path, options = {}) {
   const body = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
     const error = new Error(body?.message ?? body?.hint ?? `supabase_${response.status}`);
+    error.details = body;
+    throw error;
+  }
+  return body;
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function storageUpload(path, file) {
+  const response = await fetch(`${CONFIG.supabaseUrl}/storage/v1/object/payment-proofs/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: CONFIG.supabasePublishableKey,
+      Authorization: `Bearer ${CONFIG.supabasePublishableKey}`,
+      "Content-Type": file.type,
+      "x-upsert": "false",
+    },
+    body: file,
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = new Error(body?.message ?? body?.error ?? `storage_${response.status}`);
     error.details = body;
     throw error;
   }
@@ -375,15 +405,23 @@ function updateFooter() {
 
 function updateProgress() {
   document.querySelectorAll(".progress li").forEach((item, index) => item.classList.toggle("active", index === state.step - 1));
-  document.getElementById("back-button").hidden = state.step === 1 || (state.step === 4 && Boolean(state.reservation));
+  document.getElementById("back-button").hidden = state.step === 1 || state.step >= 4;
   const button = document.getElementById("continue-button");
-  button.textContent = state.busy ? "Reservando…" : state.step === 3 ? "Reservar e pagar" : "Avançar";
-  button.disabled = state.busy || (state.step === 1 && state.selectedSeats.size === 0) || state.step === 4;
+  const isFree = Number(state.reservation?.total_amount ?? 0) === 0;
+  button.hidden = state.step === 5;
+  if (state.busy) button.textContent = state.step === 3 ? "Reservando…" : "Enviando…";
+  else if (state.step === 3) button.textContent = "Reservar e pagar";
+  else if (state.step === 4) button.textContent = isFree ? "Finalizar inscrição" : "Enviar comprovante";
+  else button.textContent = "Avançar";
+  button.disabled = state.busy
+    || (state.step === 1 && state.selectedSeats.size === 0)
+    || (state.step === 4 && !isFree && !state.proofFile)
+    || state.step === 5;
 }
 
 function showStep(step) {
   state.step = step;
-  ["seats", "participants", "summary", "payment"].forEach((name, index) => { document.getElementById(`step-${name}`).hidden = step !== index + 1; });
+  ["seats", "participants", "summary", "payment", "conclusion"].forEach((name, index) => { document.getElementById(`step-${name}`).hidden = step !== index + 1; });
   updateProgress();
   updateFooter();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -428,8 +466,10 @@ function startCountdown() {
       clearInterval(countdownTimer);
       countdown.textContent = "Expirada";
       localStorage.removeItem(RESERVATION_STORAGE_KEY);
-      document.querySelector(".payment-placeholder h3").textContent = "Sua reserva expirou";
-      document.querySelector(".payment-placeholder p").textContent = "As cadeiras foram liberadas. Volte ao mapa para fazer uma nova seleção.";
+      showPaymentError("Sua reserva expirou e as cadeiras foram liberadas. Atualize a página para fazer uma nova seleção.");
+      document.getElementById("proof-file").disabled = true;
+      state.proofFile = null;
+      updateProgress();
     }
   };
   update();
@@ -439,8 +479,113 @@ function startCountdown() {
 function renderPayment() {
   if (!state.reservation) return;
   document.getElementById("payment-protocol").textContent = state.reservation.protocol;
-  document.getElementById("payment-total").textContent = money.format(Number(state.reservation.total_amount));
+  const total = Number(state.reservation.total_amount);
+  document.getElementById("payment-total").textContent = money.format(total);
+  document.getElementById("pix-receiver").textContent = CONFIG.pixReceiverName;
+  const pixPanel = document.getElementById("pix-panel");
+  const upload = document.getElementById("upload-drop");
+  if (total > 0) {
+    const payload = buildPixPayload(CONFIG.pixBasePayload, total);
+    const qr = qrcode(0, "M");
+    qr.addData(payload, "Byte");
+    qr.make();
+    document.getElementById("pix-qrcode").innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4, scalable: true });
+    document.getElementById("pix-code").value = payload;
+    pixPanel.hidden = false;
+    upload.hidden = false;
+    document.getElementById("proof-title").textContent = "Envie o comprovante";
+    document.getElementById("proof-instructions").textContent = "Após pagar, anexe uma imagem ou PDF para a equipe conferir.";
+  } else {
+    pixPanel.hidden = true;
+    upload.hidden = true;
+    document.getElementById("proof-title").textContent = "Inscrição gratuita";
+    document.getElementById("proof-instructions").textContent = "Não há pagamento para esta reserva. Clique em “Finalizar inscrição” para concluir.";
+  }
+  showPaymentError("");
   startCountdown();
+  updateProgress();
+}
+
+function showPaymentError(message) {
+  const box = document.getElementById("payment-error");
+  box.hidden = !message;
+  box.textContent = message;
+}
+
+function renderConclusion() {
+  if (!state.reservation) return;
+  clearInterval(countdownTimer);
+  const status = state.reservation.status;
+  const isConfirmed = status === "confirmed";
+  const isFree = Number(state.reservation.total_amount) === 0;
+  document.getElementById("conclusion-title").textContent = isConfirmed
+    ? "Inscrição confirmada"
+    : isFree ? "Inscrição recebida" : "Comprovante recebido";
+  document.getElementById("conclusion-message").textContent = isConfirmed
+    ? "O pagamento foi confirmado pela equipe da Igreja Batista Atos."
+    : isFree
+      ? "A inscrição gratuita foi registrada e está aguardando a conferência da equipe."
+      : "A equipe da Igreja Batista Atos fará a conferência do pagamento.";
+  document.getElementById("conclusion-protocol").textContent = state.reservation.protocol;
+  document.getElementById("conclusion-status").textContent = isConfirmed ? "Pagamento confirmado" : "Aguardando conferência";
+  const seats = state.reservation.seats?.map((seat) => seat.code) ?? selectedCodes();
+  document.getElementById("conclusion-seats").innerHTML = seats.map((code) => `<span class="seat-badge">${escapeHtml(code)}</span>`).join("");
+}
+
+function validProofFile(file) {
+  const acceptedTypes = new Set(["image/jpeg", "image/png", "application/pdf"]);
+  if (!file || !acceptedTypes.has(file.type)) return "Envie um arquivo JPG, PNG ou PDF.";
+  if (file.size <= 0 || file.size > 10 * 1024 * 1024) return "O comprovante deve ter no máximo 10 MB.";
+  return "";
+}
+
+async function submitPayment() {
+  if (!state.reservation || !state.reservationAccessToken) return;
+  const isFree = Number(state.reservation.total_amount) === 0;
+  const fileError = isFree ? "" : validProofFile(state.proofFile);
+  if (fileError) { showPaymentError(fileError); return; }
+  if (new Date(state.reservation.expires_at) <= new Date()) {
+    showPaymentError("Sua reserva expirou. Atualize a página e escolha novamente as cadeiras.");
+    return;
+  }
+
+  state.busy = true;
+  updateProgress();
+  showPaymentError("");
+  try {
+    let result;
+    if (isFree) {
+      result = await supabaseRequest("rpc/finalize_free_reservation", {
+        method: "POST",
+        body: JSON.stringify({ p_access_token: state.reservationAccessToken }),
+      });
+    } else {
+      const tokenHash = await sha256Hex(state.reservationAccessToken);
+      const extension = state.proofFile.type === "application/pdf" ? "pdf" : state.proofFile.type === "image/png" ? "png" : "jpg";
+      const storagePath = `${tokenHash}/${crypto.randomUUID()}.${extension}`;
+      await storageUpload(storagePath, state.proofFile);
+      result = await supabaseRequest("rpc/record_payment_proof", {
+        method: "POST",
+        body: JSON.stringify({
+          p_access_token: state.reservationAccessToken,
+          p_storage_path: storagePath,
+          p_original_filename: state.proofFile.name,
+        }),
+      });
+    }
+    state.reservation = { ...state.reservation, ...result };
+    renderConclusion();
+    showStep(5);
+  } catch (error) {
+    const expired = /reservation_(expired|unavailable)/.test(error.message ?? "");
+    showPaymentError(expired
+      ? "A reserva expirou antes da conclusão. Atualize a página e escolha novamente as cadeiras."
+      : "Não foi possível enviar o comprovante. Confira o arquivo e tente novamente.");
+    console.error("Payment proof error", error);
+  } finally {
+    state.busy = false;
+    updateProgress();
+  }
 }
 
 function showReservationError(message) {
@@ -460,6 +605,7 @@ async function createReservation() {
       body: JSON.stringify(reservationPayload(accessToken)),
     });
     state.reservation = reservation;
+    state.reservationAccessToken = accessToken;
     localStorage.setItem(RESERVATION_STORAGE_KEY, JSON.stringify({ accessToken }));
     renderPayment();
     showStep(4);
@@ -482,7 +628,8 @@ async function createReservation() {
 async function nextStep() {
   if (state.step === 1) { renderParticipantCards(); showStep(2); return; }
   if (state.step === 2) { if (validateParticipants()) { renderSummary(); showStep(3); } return; }
-  if (state.step === 3) await createReservation();
+  if (state.step === 3) { await createReservation(); return; }
+  if (state.step === 4) await submitPayment();
 }
 
 function showRegistration() {
@@ -501,18 +648,26 @@ async function restoreReservation() {
       method: "POST",
       body: JSON.stringify({ p_access_token: saved.accessToken }),
     });
-    if (!reservation || reservation.status !== "held" || new Date(reservation.expires_at) <= new Date()) {
+    if (!reservation || ["expired", "cancelled", "rejected"].includes(reservation.status)) {
       localStorage.removeItem(RESERVATION_STORAGE_KEY);
       return;
     }
     state.reservation = reservation;
+    state.reservationAccessToken = saved.accessToken;
     reservation.seats.forEach((seat) => {
       state.selectedSeats.add(seat.code);
       state.participants[seat.code] = { name: seat.name, category: seat.category, price: Number(seat.price) };
     });
     showRegistration();
-    renderPayment();
-    showStep(4);
+    if (reservation.status === "held" && new Date(reservation.expires_at) > new Date()) {
+      renderPayment();
+      showStep(4);
+    } else if (["pending_review", "confirmed"].includes(reservation.status)) {
+      renderConclusion();
+      showStep(5);
+    } else {
+      localStorage.removeItem(RESERVATION_STORAGE_KEY);
+    }
   } catch (error) {
     localStorage.removeItem(RESERVATION_STORAGE_KEY);
     console.error("Restore reservation error", error);
@@ -528,6 +683,27 @@ async function init() {
   document.getElementById("zoom-out").addEventListener("click", () => setZoom(state.zoom - .1));
   document.getElementById("continue-button").addEventListener("click", () => { void nextStep(); });
   document.getElementById("back-button").addEventListener("click", () => { if (state.step > 1) showStep(state.step - 1); });
+  document.getElementById("copy-pix-button").addEventListener("click", async () => {
+    const code = document.getElementById("pix-code").value;
+    const button = document.getElementById("copy-pix-button");
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      const field = document.getElementById("pix-code");
+      field.select();
+      document.execCommand("copy");
+    }
+    button.textContent = "Código copiado!";
+    setTimeout(() => { button.textContent = "Copiar código Pix"; }, 2200);
+  });
+  document.getElementById("proof-file").addEventListener("change", (event) => {
+    const file = event.target.files?.[0] ?? null;
+    const error = file ? validProofFile(file) : "";
+    state.proofFile = error ? null : file;
+    document.getElementById("proof-file-name").textContent = file?.name ?? "Nenhum arquivo selecionado";
+    showPaymentError(error);
+    updateProgress();
+  });
   await loadSeatStatuses();
   await restoreReservation();
   setInterval(() => { if (!document.getElementById("registration").hidden) void loadSeatStatuses({ silent: true }); }, 60000);
