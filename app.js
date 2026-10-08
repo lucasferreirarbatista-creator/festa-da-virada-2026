@@ -612,7 +612,7 @@ function renderConclusion() {
   const seats = state.reservation.seats?.map((seat) => seat.code) ?? selectedCodes();
   document.getElementById("conclusion-seats").innerHTML = seats.map((code) => `<span class="seat-badge">${escapeHtml(code)}</span>`).join("");
   const tickets = document.getElementById("open-tickets-button");
-  tickets.hidden = !["partial", "paid"].includes(state.reservation.payment_status);
+  tickets.hidden = !["pending_review", "partial", "paid"].includes(state.reservation.payment_status);
   document.getElementById("pay-balance-button").hidden = !isPartial;
 }
 

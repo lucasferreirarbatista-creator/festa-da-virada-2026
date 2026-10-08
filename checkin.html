@@ -1,1 +1,55 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Validação de ingresso</title><link rel="stylesheet" href="./admin.css"></head><body><header class="admin-header"><a class="brand" href="./admin.html"><strong>Festa da Virada</strong><span>Validação de entrada</span></a></header><main class="login-view"><section class="login-card"><p class="eyebrow">CHECK-IN</p><h1 id="checkin-title">Validar ingresso</h1><form id="checkin-login"><label>E-mail<input id="email" type="email" required></label><label>Senha<input id="password" type="password" required></label><button class="primary-button">Entrar e validar</button></form><div id="ticket-result" hidden><div id="ticket-data" class="detail-grid"></div><p id="ticket-warning"></p><button id="confirm-entry" class="success-button" type="button">Confirmar entrada</button><a class="back-link" href="./admin.html">Voltar ao painel</a></div><p id="error" class="form-error" hidden></p></section></main><script src="./config.js"></script><script src="./checkin.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Validação de ingresso</title>
+  <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <a class="brand" href="./admin.html">
+      <strong>Festa da Virada</strong>
+      <span>Validação de entrada</span>
+    </a>
+  </header>
+  <main class="login-view checkin-view">
+    <section class="login-card checkin-card">
+      <p class="eyebrow">CHECK-IN</p>
+      <h1 id="checkin-title">Validar ingresso</h1>
+      <form id="checkin-login">
+        <p class="login-copy">Entre com o acesso da organização para validar os ingressos.</p>
+        <label>E-mail<input id="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
+        <button class="primary-button">Entrar e continuar</button>
+      </form>
+      <div id="scanner-view" hidden>
+        <p class="login-copy">Leia o QR Code do ingresso com a câmera ou cole o código manualmente.</p>
+        <button id="start-camera" class="primary-button" type="button">Abrir câmera</button>
+        <div id="camera-panel" class="camera-panel" hidden>
+          <video id="qr-video" playsinline muted></video>
+          <p>Aponte a câmera para o QR Code.</p>
+        </div>
+        <form id="manual-ticket-form" class="manual-ticket-form">
+          <label>Código ou link do ingresso<input id="ticket-code" type="text" autocomplete="off" placeholder="Cole aqui o link ou o código"></label>
+          <button class="secondary-button" type="submit">Validar código</button>
+        </form>
+        <a class="back-link" href="./admin.html">Voltar ao painel</a>
+      </div>
+      <div id="ticket-result" hidden>
+        <div id="ticket-data" class="detail-grid checkin-details"></div>
+        <p id="ticket-warning" class="ticket-warning"></p>
+        <div class="checkin-actions">
+          <button id="confirm-entry" class="success-button" type="button">Confirmar entrada</button>
+          <button id="scan-another" class="secondary-button" type="button">Ler outro ingresso</button>
+        </div>
+        <a class="back-link" href="./admin.html">Voltar ao painel</a>
+      </div>
+      <p id="error" class="form-error" role="alert" hidden></p>
+    </section>
+  </main>
+  <script src="./config.js"></script>
+  <script src="./checkin.js"></script>
+</body>
+</html>
