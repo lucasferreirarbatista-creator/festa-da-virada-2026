@@ -35,14 +35,14 @@ const elements = {
   details: document.getElementById("reservation-details"),
   participants: document.getElementById("participants-list"),
   proofSection: document.getElementById("proof-section"),
-  proofButton: document.getElementById("proof-button"),
-  proofDescription: document.getElementById("proof-description"),
+  payments: document.getElementById("payments-list"),
   historySection: document.getElementById("history-section"),
   history: document.getElementById("history-list"),
   reviewSection: document.getElementById("review-section"),
   reviewNotes: document.getElementById("review-notes"),
   confirmButton: document.getElementById("confirm-button"),
   rejectButton: document.getElementById("reject-button"),
+  saveNoteButton: document.getElementById("save-note-button"),
   cancelButton: document.getElementById("cancel-button"),
   toast: document.getElementById("toast"),
 };
@@ -50,6 +50,8 @@ const elements = {
 const statusLabels = {
   held: "Em preenchimento",
   pending_review: "Aguardando análise",
+  awaiting_cash: "Aguardando dinheiro",
+  partially_paid: "Entrada paga",
   confirmed: "Confirmada",
   cancelled: "Cancelada",
   rejected: "Rejeitada",
@@ -60,6 +62,9 @@ const actionLabels = {
   confirm: "Pagamento aprovado",
   reject: "Pagamento rejeitado",
   cancel: "Reserva cancelada",
+  cancel_seat: "Cadeira cancelada",
+  check_in: "Entrada validada",
+  note: "Observação registrada",
 };
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -217,7 +222,7 @@ function renderReservations() {
         ${(reservation.seat_codes ?? []).map(code => `<i>${escapeHtml(code)}</i>`).join("")}
       </span>
       <span class="reservation-status">
-        <i class="status-badge status-${escapeHtml(reservation.status)}">${escapeHtml(statusLabels[reservation.status] ?? reservation.status)}</i>
+        <i class="status-badge status-${escapeHtml(reservation.status)}">${escapeHtml(reservation.balance_overdue ? "Saldo vencido" : statusLabels[reservation.status] ?? reservation.status)}</i>
       </span>
       <span class="reservation-amount">${escapeHtml(money.format(reservation.total_amount))}</span>
       <span class="row-arrow" aria-hidden="true">›</span>
@@ -256,7 +261,10 @@ function renderReservationDetail(data) {
     detailCard("CPF", formatCpf(data.buyer_cpf)),
     detailCard("WhatsApp", formatPhone(data.buyer_whatsapp)),
     detailCard("E-mail", data.buyer_email),
-    detailCard("Valor", money.format(data.total_amount)),
+    detailCard("Valor total", money.format(data.total_amount)),
+    detailCard("Valor pago", money.format(data.paid_amount)),
+    detailCard("Saldo", money.format(data.balance_amount)),
+    detailCard("Vencimento do saldo", Number(data.balance_amount) > 0 ? "10/12/2026" : "Quitado"),
     `<article class="detail-card"><span>Status</span><i class="status-badge status-${escapeHtml(data.status)}">${escapeHtml(statusLabels[data.status] ?? data.status)}</i></article>`,
   ].join("");
 
@@ -268,14 +276,15 @@ function renderReservationDetail(data) {
         <p>${escapeHtml(formatCpf(participant.cpf))} · ${escapeHtml(formatPhone(participant.whatsapp))}</p>
         <p>${escapeHtml(dateOnly.format(new Date(`${participant.birth_date}T00:00:00Z`)))} · ${escapeHtml(participant.age)} anos · ${escapeHtml(participant.category === "full" ? "Inteira" : participant.category === "half" ? "Meia" : "Gratuita")}</p>
       </div>
-      <span class="participant-price">${escapeHtml(money.format(participant.price))}</span>
+      <span class="participant-actions"><strong>${escapeHtml(money.format(participant.price))}</strong>${participant.item_status === "active" ? `<button class="danger-button small-button" data-cancel-seat="${escapeHtml(participant.id)}" type="button">Cancelar cadeira</button>` : "Cancelada"}</span>
     </article>
-  `).join("");
+  `).join("") + (data.free_children ?? []).map(child => `<article class="participant-card"><span class="participant-seat">Sem cadeira</span><div><strong>${escapeHtml(child.name)}</strong><p>${escapeHtml(child.age)} anos · Gratuita</p></div><span class="participant-price">R$ 0,00</span></article>`).join("");
+  elements.participants.querySelectorAll("[data-cancel-seat]").forEach(button => button.addEventListener("click", () => cancelSeat(button.dataset.cancelSeat)));
 
-  elements.proofSection.hidden = !data.proof;
-  if (data.proof) {
-    elements.proofDescription.textContent = `${data.proof.original_filename} · enviado em ${dateTime.format(new Date(data.proof.uploaded_at))}`;
-  }
+  const payments = data.payments ?? [];
+  elements.proofSection.hidden = payments.length === 0;
+  elements.payments.innerHTML = payments.map((payment,index) => `<article class="history-item"><strong>${payment.kind === "deposit" ? "Entrada" : payment.kind === "balance" ? "Saldo" : "Integral"} · ${payment.method === "cash" ? "Dinheiro" : "Pix"} · ${money.format(payment.amount_due)}</strong><p>${escapeHtml(payment.status === "approved" ? "Aprovado" : payment.status === "rejected" ? "Rejeitado" : payment.status === "expired" ? "Expirado" : "Aguardando análise")} · ${dateTime.format(new Date(payment.submitted_at))}</p>${payment.proof ? `<button class="secondary-button small-button" data-proof-index="${index}" type="button">Ver comprovante</button>` : ""}</article>`).join("");
+  elements.payments.querySelectorAll("[data-proof-index]").forEach(button => button.addEventListener("click", () => viewProof(payments[Number(button.dataset.proofIndex)].proof)));
 
   const history = data.history ?? [];
   elements.historySection.hidden = history.length === 0;
@@ -286,9 +295,9 @@ function renderReservationDetail(data) {
     </article>
   `).join("");
 
-  const canConfirm = data.status === "pending_review";
-  const canReject = data.status === "pending_review";
-  const canCancel = ["held", "pending_review", "confirmed"].includes(data.status);
+  const canConfirm = ["pending_review", "awaiting_cash"].includes(data.status);
+  const canReject = ["pending_review", "awaiting_cash"].includes(data.status);
+  const canCancel = ["held", "pending_review", "awaiting_cash", "partially_paid", "confirmed"].includes(data.status);
   elements.confirmButton.hidden = !canConfirm;
   elements.rejectButton.hidden = !canReject;
   elements.cancelButton.hidden = !canCancel;
@@ -312,8 +321,7 @@ async function openReservation(reservationId) {
   }
 }
 
-async function viewProof() {
-  const proof = state.currentReservation?.proof;
+async function viewProof(proof) {
   if (!proof) return;
   const popup = window.open("", "_blank");
   try {
@@ -336,6 +344,43 @@ async function viewProof() {
     popup?.close();
     showToast("Não foi possível abrir o comprovante.");
   }
+}
+
+async function cancelSeat(reservationSeatId) {
+  const notes = window.prompt("Motivo/observação do cancelamento desta cadeira (opcional):", "");
+  if (notes === null || !window.confirm("Cancelar somente esta cadeira e recalcular o valor da reserva?")) return;
+  try {
+    await rpc("admin_cancel_reservation_seat", { p_reservation_seat_id: reservationSeatId, p_notes: notes || null });
+    await openReservation(state.currentReservation.id);
+    await Promise.all([loadDashboard(), loadReservations()]);
+    showToast("Cadeira cancelada e valor recalculado.");
+  } catch { showToast("Não foi possível cancelar a cadeira."); }
+}
+
+async function saveNote() {
+  const notes = elements.reviewNotes.value.trim();
+  if (notes.length < 2) { showToast("Escreva uma observação antes de salvar."); return; }
+  try {
+    await rpc("admin_add_reservation_note", { p_reservation_id: state.currentReservation.id, p_notes: notes });
+    await openReservation(state.currentReservation.id);
+    showToast("Observação salva.");
+  } catch { showToast("Não foi possível salvar a observação."); }
+}
+
+function csvCell(value) { return `"${String(value ?? "").replaceAll('"','""')}"`; }
+async function exportReport(print = false) {
+  try {
+    const rows = await rpc("admin_export_participants", { p_event_slug: CONFIG.eventSlug });
+    const headers = ["Protocolo","Responsável","WhatsApp","Participante","Categoria","Cadeira","Situação","Pagamento","Total","Pago","Saldo"];
+    const values = rows.map(r => [r.protocol,r.responsible,formatPhone(r.whatsapp),r.participant_name,r.category,r.seat_code||"Sem cadeira",r.reservation_status,r.payment_status,r.total_amount,r.paid_amount,r.balance]);
+    if (print) {
+      const popup = window.open("", "_blank");
+      popup.document.write(`<title>Relatório de inscritos</title><h1>Festa da Virada — inscritos</h1><table border="1" cellspacing="0" cellpadding="6"><thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${values.map(row=>`<tr>${row.map(v=>`<td>${escapeHtml(v)}</td>`).join("")}</tr>`).join("")}</tbody></table><script>print()<\/script>`);
+      popup.document.close(); return;
+    }
+    const csv = "\ufeff" + [headers,...values].map(row=>row.map(csvCell).join(";")).join("\n");
+    const link = document.createElement("a"); link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); link.download=`inscritos-festa-da-virada-${new Date().toISOString().slice(0,10)}.csv`; link.click(); URL.revokeObjectURL(link.href);
+  } catch { showToast("Não foi possível gerar o relatório."); }
 }
 
 async function reviewReservation(action) {
@@ -413,9 +458,11 @@ elements.dialogClose.addEventListener("click", () => elements.dialog.close());
 elements.dialog.addEventListener("click", event => {
   if (event.target === elements.dialog) elements.dialog.close();
 });
-elements.proofButton.addEventListener("click", viewProof);
+document.getElementById("export-button").addEventListener("click", () => exportReport(false));
+document.getElementById("print-report-button").addEventListener("click", () => exportReport(true));
 elements.confirmButton.addEventListener("click", () => reviewReservation("confirm"));
 elements.rejectButton.addEventListener("click", () => reviewReservation("reject"));
+elements.saveNoteButton.addEventListener("click", saveNote);
 elements.cancelButton.addEventListener("click", () => reviewReservation("cancel"));
 
 async function initialize() {

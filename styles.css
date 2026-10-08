@@ -25,9 +25,11 @@ button { cursor: pointer; }
   display: flex; align-items: center; justify-content: space-between; background: rgb(7 26 61 / 96%); color: white;
   border-bottom: 1px solid rgb(255 255 255 / 10%); backdrop-filter: blur(14px);
 }
-.brand { display: flex; flex-direction: column; color: inherit; text-decoration: none; font-family: Georgia, "Times New Roman", serif; }
+.brand { display: flex; align-items: center; gap: .65rem; color: inherit; text-decoration: none; font-family: Georgia, "Times New Roman", serif; }
+.brand-symbol { width: 2rem; height: 2rem; object-fit: contain; padding: .12rem; border-radius: 50%; background: white; }
+.brand-copy { display: flex; flex-direction: column; }
 .brand strong { font-size: 1.18rem; font-weight: 500; line-height: 1; }
-.brand span { margin-top: .28rem; color: var(--gold); font: 600 .65rem/1 ui-sans-serif, system-ui; letter-spacing: .18em; text-transform: uppercase; }
+.brand-copy > span { margin-top: .28rem; color: var(--gold); font: 600 .65rem/1 ui-sans-serif, system-ui; letter-spacing: .18em; text-transform: uppercase; }
 .organization-link { border: 0; background: transparent; color: rgb(255 255 255 / 68%); font-size: .86rem; text-decoration: none; }
 .organization-link:hover { color: var(--gold); }
 
@@ -48,6 +50,7 @@ button { cursor: pointer; }
 .event-facts div { padding: 1rem 1.15rem; border: 1px solid rgb(255 255 255 / 14%); border-radius: 1rem; background: rgb(255 255 255 / 5%); }
 .event-facts dt { color: var(--gold); font-size: .67rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .event-facts dd { margin: .45rem 0 0; font-size: .9rem; line-height: 1.35; }
+.event-facts dd small { display: block; margin-top: .3rem; color: rgb(255 255 255 / 68%); font-size: .72rem; }
 .primary-button { min-height: 3.15rem; padding: 0 1.65rem; border: 0; border-radius: 999px; color: white; background: var(--navy); font-weight: 750; transition: transform .18s ease, opacity .18s ease, background .18s ease; }
 .primary-button:hover:not(:disabled) { transform: translateY(-2px); background: var(--navy-2); }
 .primary-button:disabled { cursor: not-allowed; opacity: .42; }
@@ -145,6 +148,11 @@ button { cursor: pointer; }
 .selected-seat-chip { padding: .45rem .7rem; border: 1px solid var(--gold); border-radius: 999px; color: #62450d; background: #fff8e8; font-size: .76rem; font-weight: 750; }
 .empty-selection { margin: 0; color: var(--muted); font-size: .85rem; }
 .participant-cards { display: grid; gap: 1rem; margin-top: 1rem; }
+.free-children-section { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; padding: 1.15rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--sand); }
+.free-children-section h3, .free-children-section p { margin: 0; }
+.free-children-section p { margin-top: .25rem; color: var(--muted); font-size: .82rem; }
+.free-child-card { position: relative; }
+.remove-child { position: absolute; top: .65rem; right: .65rem; }
 .form-card, .summary-card { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: 1.25rem; background: white; box-shadow: 0 10px 28px rgb(7 26 61 / 6%); }
 .form-card { min-width: 0; }
 .form-card legend { padding: 0 .55rem; font: 400 1.35rem/1.2 Georgia, serif; }
@@ -173,6 +181,17 @@ button { cursor: pointer; }
 .summary-table tfoot th, .summary-table tfoot td { border-bottom: 0; font: 700 1.05rem/1.2 Georgia, serif; }
 .summary-card > .important-note { margin: 1rem; max-width: none; border-radius: .8rem; }
 .payment-step { max-width: 850px; margin: auto; }
+.payment-options { margin-top: 1rem; padding: 1.4rem; border: 1px solid var(--line); border-radius: 1rem; background: white; box-shadow: var(--shadow); }
+.payment-options h3 { margin: 0; font: 400 1.45rem/1.2 Georgia, serif; }
+.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: 1rem 0; }
+.choice-card { display: flex; align-items: flex-start; gap: .65rem; padding: .9rem; border: 1px solid var(--line); border-radius: .8rem; cursor: pointer; }
+.choice-card:has(input:checked) { border-color: var(--gold); background: #fff8e8; }
+.choice-card input { margin-top: .2rem; accent-color: var(--navy); }
+.choice-card span { display: grid; gap: .2rem; }
+.choice-card small { color: var(--muted); }
+.payment-due { padding: .65rem .8rem; border-radius: .65rem; background: var(--sand); }
+.cash-panel { margin-top: 1rem; }
+.conclusion-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.2rem; }
 .reservation-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1.5rem; overflow: hidden; border: 1px solid var(--gold); border-radius: 1rem; background: var(--gold); }
 .reservation-card div { display: grid; gap: .35rem; padding: 1.2rem; background: var(--navy); color: white; }
 .reservation-card small { color: var(--gold-light); font-size: .67rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
@@ -228,6 +247,7 @@ button { cursor: pointer; }
   .form-grid { grid-template-columns: 1fr; }
   .reservation-card { grid-template-columns: 1fr; }
   .payment-grid { grid-template-columns: 1fr; }
+  .option-grid { grid-template-columns: 1fr; }
   .steps-section { gap: 2rem; }
   .steps-section ol { grid-template-columns: 1fr; }
   .intro-section, .pricing-section, .steps-section { padding-top: 3.5rem; padding-bottom: 3.5rem; }

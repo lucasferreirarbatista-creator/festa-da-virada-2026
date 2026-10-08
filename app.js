@@ -17,9 +17,14 @@ const state = {
   unavailableSeats: new Set(),
   zoom: 1,
   participants: {},
+  freeChildren: [],
   reservation: null,
   reservationAccessToken: null,
   proofFile: null,
+  paymentStarted: false,
+  paymentMethod: "pix",
+  paymentPlan: "full",
+  paymentDue: 0,
   busy: false,
   connected: false,
 };
@@ -358,6 +363,37 @@ function renderParticipantCards() {
   buyerPhone.addEventListener("input", () => { buyerPhone.value = maskPhone(buyerPhone.value); });
 }
 
+function freeChildTemplate(child, index) {
+  return `<fieldset class="form-card free-child-card" data-child-index="${index}">
+    <legend>Criança sem cadeira ${index + 1}</legend>
+    <button class="text-button remove-child" type="button" data-remove-child="${index}">Remover</button>
+    <div class="form-grid">
+      <label>Nome completo<input data-child-field="name" value="${escapeHtml(child.name ?? "")}" required></label>
+      <label>Data de nascimento<input data-child-field="birthDate" type="date" min="2021-01-01" max="2026-12-31" value="${escapeHtml(child.birthDate ?? "")}" required></label>
+    </div>
+    <div class="category-strip"><div><small>Categoria</small><strong data-child-result>Gratuita · sem cadeira</strong></div><div><small>Valor</small><strong>R$ 0,00</strong></div></div>
+  </fieldset>`;
+}
+
+function renderFreeChildren() {
+  const container = document.getElementById("free-children-list");
+  container.innerHTML = state.freeChildren.map(freeChildTemplate).join("");
+  container.querySelectorAll("[data-child-field]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const card = input.closest("[data-child-index]");
+      const child = state.freeChildren[Number(card.dataset.childIndex)];
+      child.name = card.querySelector('[data-child-field="name"]').value.trim();
+      child.birthDate = card.querySelector('[data-child-field="birthDate"]').value;
+      const category = calculateCategory(child.birthDate);
+      card.querySelector("[data-child-result]").textContent = category ? `${category.category} · ${category.age} anos · sem cadeira` : "Aguardando data";
+    });
+  });
+  container.querySelectorAll("[data-remove-child]").forEach((button) => button.addEventListener("click", () => {
+    state.freeChildren.splice(Number(button.dataset.removeChild), 1);
+    renderFreeChildren();
+  }));
+}
+
 function validateParticipants() {
   const errors = [];
   const buyer = buyerData();
@@ -378,7 +414,13 @@ function validateParticipants() {
       ["whatsapp", validPhone(person.whatsapp), `Informe um WhatsApp válido na cadeira ${card.dataset.seat}.`],
       ["birthDate", Boolean(calculateCategory(person.birthDate)), `Informe uma data de nascimento válida na cadeira ${card.dataset.seat}.`],
     ];
+    if (person.category === "Gratuita") checks.push(["birthDate", false, `Crianças de até 5 anos não ocupam cadeira. Remova a cadeira ${card.dataset.seat} e adicione a criança na seção sem cadeira.`]);
     checks.forEach(([field, valid, message]) => { if (!valid) { errors.push(message); card.querySelector(`[data-field="${field}"]`).classList.add("invalid"); } });
+  });
+  state.freeChildren.forEach((child, index) => {
+    const category = calculateCategory(child.birthDate);
+    if (child.name.length < 3) errors.push(`Informe o nome da criança sem cadeira ${index + 1}.`);
+    if (!category || category.category !== "Gratuita") errors.push(`A criança sem cadeira ${index + 1} deve ter até 5 anos em 31/12/2026.`);
   });
   const errorBox = document.getElementById("form-errors");
   errorBox.hidden = errors.length === 0;
@@ -390,10 +432,15 @@ function validateParticipants() {
 function renderSummary() {
   const buyer = buyerData();
   document.getElementById("summary-buyer").innerHTML = `<h3>${escapeHtml(buyer.name)}</h3><p>${escapeHtml(buyer.whatsapp)} · ${escapeHtml(buyer.email)}</p>`;
-  document.getElementById("summary-items").innerHTML = selectedCodes().map((code) => {
+  const seatedRows = selectedCodes().map((code) => {
     const person = state.participants[code];
     return `<tr><td><strong>${code}</strong><br><small>${seatArea(code)}</small></td><td>${escapeHtml(person.name)}<br><small>${person.age} anos</small></td><td>${person.category}</td><td>${money.format(person.price)}</td></tr>`;
   }).join("");
+  const freeRows = state.freeChildren.map((child) => {
+    const category = calculateCategory(child.birthDate);
+    return `<tr><td><strong>Sem cadeira</strong></td><td>${escapeHtml(child.name)}<br><small>${category?.age ?? "—"} anos</small></td><td>Gratuita</td><td>${money.format(0)}</td></tr>`;
+  }).join("");
+  document.getElementById("summary-items").innerHTML = seatedRows + freeRows;
   document.getElementById("summary-total").textContent = money.format(currentTotal());
 }
 
@@ -407,15 +454,14 @@ function updateProgress() {
   document.querySelectorAll(".progress li").forEach((item, index) => item.classList.toggle("active", index === state.step - 1));
   document.getElementById("back-button").hidden = state.step === 1 || state.step >= 4;
   const button = document.getElementById("continue-button");
-  const isFree = Number(state.reservation?.total_amount ?? 0) === 0;
   button.hidden = state.step === 5;
   if (state.busy) button.textContent = state.step === 3 ? "Reservando…" : "Enviando…";
   else if (state.step === 3) button.textContent = "Reservar e pagar";
-  else if (state.step === 4) button.textContent = isFree ? "Finalizar inscrição" : "Enviar comprovante";
+  else if (state.step === 4) button.textContent = "Enviar comprovante";
   else button.textContent = "Avançar";
   button.disabled = state.busy
     || (state.step === 1 && state.selectedSeats.size === 0)
-    || (state.step === 4 && !isFree && !state.proofFile)
+    || (state.step === 4 && (!state.paymentStarted || state.paymentMethod === "cash" || !state.proofFile))
     || state.step === 5;
 }
 
@@ -449,12 +495,17 @@ function reservationPayload(accessToken) {
       whatsapp: digits(state.participants[code].whatsapp),
       birth_date: state.participants[code].birthDate,
     })),
+    p_free_children: state.freeChildren.map((child) => ({ name: child.name, birth_date: child.birthDate })),
   };
 }
 
 let countdownTimer;
 function startCountdown() {
   clearInterval(countdownTimer);
+  if (state.reservation?.status !== "held") {
+    document.getElementById("payment-countdown").textContent = "Saldo pendente";
+    return;
+  }
   const update = () => {
     const countdown = document.getElementById("payment-countdown");
     if (!countdown || !state.reservation) return;
@@ -482,28 +533,57 @@ function renderPayment() {
   const total = Number(state.reservation.total_amount);
   document.getElementById("payment-total").textContent = money.format(total);
   document.getElementById("pix-receiver").textContent = CONFIG.pixReceiverName;
-  const pixPanel = document.getElementById("pix-panel");
-  const upload = document.getElementById("upload-drop");
-  if (total > 0) {
-    const payload = buildPixPayload(CONFIG.pixBasePayload, total);
+  document.getElementById("payment-options").hidden = false;
+  document.getElementById("payment-content").hidden = true;
+  document.getElementById("cash-panel").hidden = true;
+  state.paymentStarted = false;
+  const isBalance = Number(state.reservation.paid_amount ?? 0) > 0;
+  document.querySelector("#payment-options h3").textContent = isBalance ? "Como você deseja quitar o saldo?" : "Como você deseja pagar?";
+  document.querySelectorAll('[name="payment-plan"]').forEach(input => { input.closest(".choice-card").hidden = isBalance; });
+  showPaymentError("");
+  startCountdown();
+  updateProgress();
+}
+
+function renderPixAmount(amount) {
+  const payload = buildPixPayload(CONFIG.pixBasePayload, amount);
     const qr = qrcode(0, "M");
     qr.addData(payload, "Byte");
     qr.make();
     document.getElementById("pix-qrcode").innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4, scalable: true });
-    document.getElementById("pix-code").value = payload;
-    pixPanel.hidden = false;
-    upload.hidden = false;
-    document.getElementById("proof-title").textContent = "Envie o comprovante";
-    document.getElementById("proof-instructions").textContent = "Após pagar, anexe uma imagem ou PDF para a equipe conferir.";
-  } else {
-    pixPanel.hidden = true;
-    upload.hidden = true;
-    document.getElementById("proof-title").textContent = "Inscrição gratuita";
-    document.getElementById("proof-instructions").textContent = "Não há pagamento para esta reserva. Clique em “Finalizar inscrição” para concluir.";
-  }
+  document.getElementById("pix-code").value = payload;
+  document.getElementById("payment-due").textContent = money.format(amount);
+}
+
+async function startPayment() {
+  if (!state.reservation || !state.reservationAccessToken) return;
+  state.paymentPlan = document.querySelector('[name="payment-plan"]:checked').value;
+  state.paymentMethod = document.querySelector('[name="payment-method"]:checked').value;
+  const button = document.getElementById("start-payment-button");
+  button.disabled = true;
   showPaymentError("");
-  startCountdown();
-  updateProgress();
+  try {
+    const result = await supabaseRequest("rpc/start_payment", { method: "POST", body: JSON.stringify({
+      p_access_token: state.reservationAccessToken, p_payment_plan: state.paymentPlan, p_payment_method: state.paymentMethod,
+    }) });
+    state.reservation = { ...state.reservation, ...result };
+    state.paymentDue = Number(result.amount_due);
+    state.paymentStarted = true;
+    document.getElementById("payment-options").hidden = true;
+    if (state.paymentMethod === "cash") {
+      document.getElementById("cash-panel").hidden = false;
+      document.getElementById("cash-payment-due").textContent = money.format(state.paymentDue);
+      renderConclusion();
+      showStep(5);
+    } else {
+      renderPixAmount(state.paymentDue);
+      document.getElementById("payment-content").hidden = false;
+      updateProgress();
+    }
+  } catch (error) {
+    showPaymentError("Não foi possível iniciar o pagamento. Atualize a reserva e tente novamente.");
+    console.error("Start payment error", error);
+  } finally { button.disabled = false; }
 }
 
 function showPaymentError(message) {
@@ -517,19 +597,23 @@ function renderConclusion() {
   clearInterval(countdownTimer);
   const status = state.reservation.status;
   const isConfirmed = status === "confirmed";
-  const isFree = Number(state.reservation.total_amount) === 0;
+  const isPartial = status === "partially_paid" || state.reservation.payment_status === "partial";
+  const isCash = status === "awaiting_cash";
   document.getElementById("conclusion-title").textContent = isConfirmed
     ? "Inscrição confirmada"
-    : isFree ? "Inscrição recebida" : "Comprovante recebido";
+    : isCash ? "Pagamento em dinheiro registrado" : isPartial ? "Entrada confirmada" : "Comprovante recebido";
   document.getElementById("conclusion-message").textContent = isConfirmed
     ? "O pagamento foi confirmado pela equipe da Igreja Batista Atos."
-    : isFree
-      ? "A inscrição gratuita foi registrada e está aguardando a conferência da equipe."
+    : isCash ? "A organização confirmará o pagamento em até 48 horas."
+      : isPartial ? "Seu ingresso foi gerado. A entrada no evento será liberada após a quitação do saldo."
       : "A equipe da Igreja Batista Atos fará a conferência do pagamento.";
   document.getElementById("conclusion-protocol").textContent = state.reservation.protocol;
-  document.getElementById("conclusion-status").textContent = isConfirmed ? "Pagamento confirmado" : "Aguardando conferência";
+  document.getElementById("conclusion-status").textContent = isConfirmed ? "Pagamento quitado" : isPartial ? "Entrada paga · saldo pendente" : isCash ? "Aguardando pagamento em dinheiro" : "Aguardando conferência";
   const seats = state.reservation.seats?.map((seat) => seat.code) ?? selectedCodes();
   document.getElementById("conclusion-seats").innerHTML = seats.map((code) => `<span class="seat-badge">${escapeHtml(code)}</span>`).join("");
+  const tickets = document.getElementById("open-tickets-button");
+  tickets.hidden = !["partial", "paid"].includes(state.reservation.payment_status);
+  document.getElementById("pay-balance-button").hidden = !isPartial;
 }
 
 function validProofFile(file) {
@@ -541,10 +625,9 @@ function validProofFile(file) {
 
 async function submitPayment() {
   if (!state.reservation || !state.reservationAccessToken) return;
-  const isFree = Number(state.reservation.total_amount) === 0;
-  const fileError = isFree ? "" : validProofFile(state.proofFile);
+  const fileError = validProofFile(state.proofFile);
   if (fileError) { showPaymentError(fileError); return; }
-  if (new Date(state.reservation.expires_at) <= new Date()) {
+  if (state.reservation.status === "held" && new Date(state.reservation.expires_at) <= new Date()) {
     showPaymentError("Sua reserva expirou. Atualize a página e escolha novamente as cadeiras.");
     return;
   }
@@ -554,12 +637,6 @@ async function submitPayment() {
   showPaymentError("");
   try {
     let result;
-    if (isFree) {
-      result = await supabaseRequest("rpc/finalize_free_reservation", {
-        method: "POST",
-        body: JSON.stringify({ p_access_token: state.reservationAccessToken }),
-      });
-    } else {
       const tokenHash = await sha256Hex(state.reservationAccessToken);
       const extension = state.proofFile.type === "application/pdf" ? "pdf" : state.proofFile.type === "image/png" ? "png" : "jpg";
       const storagePath = `${tokenHash}/${crypto.randomUUID()}.${extension}`;
@@ -572,7 +649,6 @@ async function submitPayment() {
           p_original_filename: state.proofFile.name,
         }),
       });
-    }
     state.reservation = { ...state.reservation, ...result };
     renderConclusion();
     showStep(5);
@@ -615,6 +691,10 @@ async function createReservation() {
     if (unavailableCode) {
       showReservationError(`A cadeira ${unavailableCode} acabou de ser reservada por outra pessoa. Volte ao mapa e escolha outra cadeira.`);
       await loadSeatStatuses();
+    } else if (rawMessage.includes("half_quota_unavailable")) {
+      showReservationError("As 50 cadeiras de meia-entrada já foram preenchidas.");
+    } else if (rawMessage.includes("full_quota_unavailable")) {
+      showReservationError("As 350 cadeiras de inteira já foram preenchidas.");
     } else {
       showReservationError("Não foi possível criar a reserva agora. Confira sua conexão e tente novamente.");
     }
@@ -654,15 +734,16 @@ async function restoreReservation() {
     }
     state.reservation = reservation;
     state.reservationAccessToken = saved.accessToken;
-    reservation.seats.forEach((seat) => {
+    reservation.seats.filter((seat) => seat.item_status === "active").forEach((seat) => {
       state.selectedSeats.add(seat.code);
       state.participants[seat.code] = { name: seat.name, category: seat.category, price: Number(seat.price) };
     });
     showRegistration();
-    if (reservation.status === "held" && new Date(reservation.expires_at) > new Date()) {
+    state.freeChildren = (reservation.free_children ?? []).filter((child) => child.item_status === "active").map((child) => ({ name: child.name, birthDate: child.birth_date }));
+    if (["held", "partially_paid"].includes(reservation.status) && (reservation.status !== "held" || new Date(reservation.expires_at) > new Date())) {
       renderPayment();
       showStep(4);
-    } else if (["pending_review", "confirmed"].includes(reservation.status)) {
+    } else if (["pending_review", "awaiting_cash", "confirmed"].includes(reservation.status)) {
       renderConclusion();
       showStep(5);
     } else {
@@ -683,6 +764,10 @@ async function init() {
   document.getElementById("zoom-out").addEventListener("click", () => setZoom(state.zoom - .1));
   document.getElementById("continue-button").addEventListener("click", () => { void nextStep(); });
   document.getElementById("back-button").addEventListener("click", () => { if (state.step > 1) showStep(state.step - 1); });
+  document.getElementById("add-free-child").addEventListener("click", () => { state.freeChildren.push({ name: "", birthDate: "" }); renderFreeChildren(); });
+  document.getElementById("start-payment-button").addEventListener("click", () => { void startPayment(); });
+  document.getElementById("open-tickets-button").addEventListener("click", () => { window.location.href = `./tickets.html#${state.reservationAccessToken}`; });
+  document.getElementById("pay-balance-button").addEventListener("click", () => { renderPayment(); showStep(4); });
   document.getElementById("copy-pix-button").addEventListener("click", async () => {
     const code = document.getElementById("pix-code").value;
     const button = document.getElementById("copy-pix-button");

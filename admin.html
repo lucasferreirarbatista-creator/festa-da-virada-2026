@@ -12,8 +12,8 @@
   <body>
     <header class="admin-header">
       <a class="brand" href="./">
-        <strong>Festa da Virada</strong>
-        <span>Igreja Batista Atos</span>
+        <img class="brand-symbol" src="./assets/iba-symbol.png" alt="" />
+        <span class="brand-copy"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></span>
       </a>
       <div id="admin-identity" class="admin-identity" hidden>
         <span id="admin-name"></span>
@@ -51,7 +51,7 @@
             <h1>Reservas e pagamentos</h1>
             <p>Acompanhe a ocupação, confira comprovantes e libere cadeiras quando necessário.</p>
           </div>
-          <button id="refresh-button" class="secondary-button" type="button">Atualizar dados</button>
+          <div class="dashboard-actions"><a class="secondary-button link-button" href="./checkin.html">Validar QR Code</a><button id="export-button" class="secondary-button" type="button">Baixar relatório CSV</button><button id="print-report-button" class="secondary-button" type="button">Imprimir relatório</button><button id="refresh-button" class="secondary-button" type="button">Atualizar dados</button></div>
         </div>
 
         <section class="metrics" aria-label="Resumo do evento">
@@ -79,6 +79,8 @@
               <select id="status-filter">
                 <option value="all">Todos</option>
                 <option value="pending_review" selected>Aguardando análise</option>
+                <option value="awaiting_cash">Aguardando dinheiro</option>
+                <option value="partially_paid">Entrada paga</option>
                 <option value="confirmed">Confirmadas</option>
                 <option value="held">Em preenchimento</option>
                 <option value="cancelled">Canceladas</option>
@@ -118,10 +120,9 @@
 
           <section class="detail-section" id="proof-section">
             <div class="detail-section-heading">
-              <h3>Comprovante</h3>
-              <button id="proof-button" class="secondary-button" type="button">Visualizar comprovante</button>
+              <h3>Pagamentos e comprovantes</h3>
             </div>
-            <p id="proof-description"></p>
+            <div id="payments-list" class="history-list"></div>
           </section>
 
           <section class="detail-section" id="history-section">
@@ -137,6 +138,7 @@
             <div class="action-buttons">
               <button id="confirm-button" class="success-button" type="button">Aprovar pagamento</button>
               <button id="reject-button" class="danger-button" type="button">Rejeitar e liberar lugares</button>
+              <button id="save-note-button" class="secondary-button" type="button">Salvar observação</button>
               <button id="cancel-button" class="secondary-button" type="button">Cancelar reserva</button>
             </div>
           </section>

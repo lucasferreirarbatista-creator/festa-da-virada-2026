@@ -15,10 +15,10 @@
   <body>
     <header class="site-header">
       <a class="brand" href="#inicio" aria-label="Festa da Virada — início">
-        <strong>Festa da Virada</strong>
-        <span>Igreja Batista Atos</span>
+        <img class="brand-symbol" src="./assets/iba-symbol-inverse.png" alt="" />
+        <span class="brand-copy"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></span>
       </a>
-      <a class="organization-link" href="./admin.html">Organização</a>
+      <a class="organization-link" href="/admin.html" aria-label="Acessar o painel administrativo">Organização</a>
     </header>
 
     <main>
@@ -27,12 +27,12 @@
           <div class="hero-content">
             <p class="eyebrow">Igreja Batista Atos</p>
             <h1>Festa da <em>Virada</em></h1>
-            <p class="hero-copy">Uma noite para celebrar, repartir a mesa, agradecer e iniciar um novo ciclo na presença de Deus.</p>
+            <p class="hero-copy">Uma noite de comunhão, celebração e esperança, agradecendo a Deus pelo novo ciclo que se inicia.</p>
 
             <dl class="event-facts">
-              <div><dt>Data</dt><dd>01 de Janeiro de 2027</dd></div>
+              <div><dt>Data</dt><dd>1º de janeiro de 2027</dd></div>
               <div><dt>Horário</dt><dd>00h20</dd></div>
-              <div><dt>Local</dt><dd>Salão Triunfo · Ipatinga/MG</dd></div>
+              <div><dt>Local</dt><dd>Salão Triunfo · Canaã<small>Rua dos Filipenses, 85 · Ipatinga/MG</small></dd></div>
             </dl>
 
             <button class="primary-button hero-button" id="start-button" type="button">Escolher meus lugares</button>
@@ -42,8 +42,8 @@
 
         <section class="intro-section">
           <p class="eyebrow dark">Uma noite para celebrar</p>
-          <h2>Ceia, comunhão e gratidão</h2>
-          <p>Um ambiente acolhedor e preparado para toda a família receber o novo ano em unidade.</p>
+          <h2>Na comunhão e no partir do pão</h2>
+          <p>Um ambiente acolhedor e preparado para toda a família receber o novo ano.</p>
         </section>
 
         <section class="pricing-section" aria-labelledby="pricing-title">
@@ -61,10 +61,9 @@
               <span>De 6 a 10 anos</span><h3>Meia</h3><strong>R$ 90,00</strong><small>por participante</small>
             </article>
             <article class="price-card">
-              <span>Até 5 anos</span><h3>Gratuita</h3><strong>R$ 0,00</strong><small>com cadeira reservada</small>
+              <span>Até 5 anos</span><h3>Gratuita</h3><strong>R$ 0,00</strong><small>por participante</small>
             </article>
           </div>
-          <p class="important-note"><strong>Importante:</strong> cada inscrição corresponde a uma cadeira, inclusive as gratuitas.</p>
         </section>
 
         <section class="steps-section">
@@ -97,7 +96,7 @@
             <div class="flow-heading">
               <p class="eyebrow dark">Etapa 1 de 5</p>
               <h2>Escolha seus lugares</h2>
-              <p>Selecione uma cadeira para cada participante. Você poderá escolher lugares em áreas diferentes.</p>
+              <p>Selecione uma cadeira para cada participante com inscrição inteira ou meia. Crianças de até 5 anos serão adicionadas sem cadeira na próxima etapa.</p>
             </div>
 
             <div class="map-toolbar">
@@ -168,6 +167,14 @@
                 </div>
               </fieldset>
               <div id="participant-cards" class="participant-cards"></div>
+              <section class="free-children-section">
+                <div>
+                  <h3>Crianças de até 5 anos</h3>
+                  <p>Inscrição gratuita e sem reserva de cadeira.</p>
+                </div>
+                <button id="add-free-child" class="secondary-button" type="button">Adicionar criança</button>
+              </section>
+              <div id="free-children-list" class="participant-cards"></div>
               <div id="form-errors" class="form-errors" role="alert" hidden></div>
             </form>
           </section>
@@ -200,13 +207,27 @@
             </div>
             <div class="reservation-card">
               <div><small>Protocolo</small><strong id="payment-protocol">—</strong></div>
-              <div><small>Valor</small><strong id="payment-total">R$ 0,00</strong></div>
+              <div><small>Total da reserva</small><strong id="payment-total">R$ 0,00</strong></div>
               <div><small>Tempo restante</small><strong id="payment-countdown">15:00</strong></div>
             </div>
-            <div class="payment-grid" id="payment-content">
+            <section class="payment-options" id="payment-options">
+              <div>
+                <p class="eyebrow dark">Forma de pagamento</p>
+                <h3>Como você deseja pagar?</h3>
+              </div>
+              <div class="option-grid">
+                <label class="choice-card"><input type="radio" name="payment-plan" value="full" checked><span><strong>Valor integral</strong><small>Pague 100% agora.</small></span></label>
+                <label class="choice-card"><input type="radio" name="payment-plan" value="deposit"><span><strong>Entrada de 30%</strong><small>Saldo até 10/12/2026.</small></span></label>
+                <label class="choice-card"><input type="radio" name="payment-method" value="pix" checked><span><strong>Pix</strong><small>Envie o comprovante.</small></span></label>
+                <label class="choice-card"><input type="radio" name="payment-method" value="cash"><span><strong>Dinheiro</strong><small>Confirmação em até 48 horas.</small></span></label>
+              </div>
+              <button id="start-payment-button" class="primary-button" type="button">Continuar para o pagamento</button>
+            </section>
+            <div class="payment-grid" id="payment-content" hidden>
               <article class="payment-panel pix-panel" id="pix-panel">
                 <p class="eyebrow dark">Pague via Pix</p>
                 <h3>Escaneie ou copie o código</h3>
+                <p class="payment-due">Valor desta etapa: <strong id="payment-due">R$ 0,00</strong></p>
                 <div class="pix-qrcode" id="pix-qrcode" aria-label="QR Code Pix"></div>
                 <p class="pix-receiver">Recebedor: <strong id="pix-receiver"></strong></p>
                 <label class="pix-code-label" for="pix-code">Pix copia e cola</label>
@@ -228,6 +249,12 @@
                 <p class="security-note">Seu comprovante será armazenado de forma privada e acessível somente à equipe autorizada.</p>
               </article>
             </div>
+            <article class="payment-panel cash-panel" id="cash-panel" hidden>
+              <p class="eyebrow dark">Pagamento em dinheiro</p>
+              <h3>Reserva aguardando confirmação</h3>
+              <p>Você terá até 48 horas para realizar o pagamento diretamente à organização. Não é necessário enviar comprovante.</p>
+              <p class="payment-due">Valor desta etapa: <strong id="cash-payment-due">R$ 0,00</strong></p>
+            </article>
           </section>
 
           <section id="step-conclusion" class="flow-step conclusion-step" hidden>
@@ -245,6 +272,10 @@
               <h3>Lugares reservados</h3>
               <div id="conclusion-seats" class="selected-seat-list"></div>
               <p>Guarde o protocolo. A confirmação será realizada pelos contatos informados na inscrição.</p>
+              <div class="conclusion-actions">
+                <button id="open-tickets-button" class="primary-button" type="button">Baixar ou imprimir ingressos</button>
+                <button id="pay-balance-button" class="secondary-button" type="button" hidden>Pagar saldo</button>
+              </div>
             </div>
           </section>
         </div>
@@ -260,8 +291,8 @@
     </main>
 
     <footer class="site-footer">
-      <div class="brand inverse"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></div>
-      <div><strong>Organização</strong><p>(31) 8741-7442<br>iba.igrejabatistaatos@gmail.com</p></div>
+      <div class="brand inverse"><img class="brand-symbol" src="./assets/iba-symbol-inverse.png" alt="" /><span class="brand-copy"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></span></div>
+      <div><strong>Organização</strong><p>(31) 98741-7442<br>iba.igrejabatistaatos@gmail.com</p></div>
       <div><strong>Privacidade</strong><p>Os dados serão utilizados somente para a organização do evento.</p></div>
     </footer>
 
