@@ -12,10 +12,11 @@ const elements = {
   login: document.getElementById("checkin-login"),
   scanner: document.getElementById("scanner-view"),
   result: document.getElementById("ticket-result"),
+  resultTitle: document.getElementById("ticket-result-title"),
+  resultIcon: document.getElementById("ticket-result-icon"),
   error: document.getElementById("error"),
   ticketData: document.getElementById("ticket-data"),
   warning: document.getElementById("ticket-warning"),
-  confirm: document.getElementById("confirm-entry"),
   startCamera: document.getElementById("start-camera"),
   cameraPanel: document.getElementById("camera-panel"),
   qrReader: document.getElementById("qr-reader"),
@@ -114,18 +115,18 @@ function stopCamera() {
 
 function showLogin(message = "") {
   stopCamera();
+  if (elements.result.open) elements.result.close();
   elements.login.hidden = false;
   elements.scanner.hidden = true;
-  elements.result.hidden = true;
   elements.title.textContent = "Validar ingresso";
   showError(message);
 }
 
 function showScanner(message = "") {
   stopCamera();
+  if (elements.result.open) elements.result.close();
   elements.login.hidden = true;
   elements.scanner.hidden = false;
-  elements.result.hidden = true;
   elements.title.textContent = "Ler QR Code";
   elements.ticketCode.value = "";
   showError(message);
@@ -162,21 +163,35 @@ async function validateToken(value) {
   history.replaceState(null, "", `${location.pathname}?t=${encodeURIComponent(ticketToken)}`);
   elements.login.hidden = true;
   elements.scanner.hidden = true;
-  elements.result.hidden = false;
-  elements.title.textContent = "Resultado da validação";
   elements.ticketData.replaceChildren(
     detail("Participante", ticket.participant_name),
     detail("Cadeira", ticket.seat_code || "Sem cadeira"),
     detail("Protocolo", ticket.protocol),
     detail("Pagamento", ticket.payment_status === "paid" ? "Quitado" : "Pendente"),
   );
-  elements.warning.textContent = ticket.ticket_status === "checked_in"
-    ? "Este ingresso já foi utilizado."
-    : ticket.allowed
-      ? "Ingresso válido. Confirme a entrada."
-      : "Entrada bloqueada: o pagamento ainda não foi quitado ou o ingresso foi cancelado.";
-  elements.warning.className = `ticket-warning ${ticket.allowed ? "valid" : "blocked"}`;
-  elements.confirm.disabled = !ticket.allowed;
+  let authorized = false;
+  if (ticket.ticket_status === "checked_in") {
+    elements.resultTitle.textContent = "Ingresso já utilizado";
+    elements.warning.textContent = "A entrada deste participante já foi registrada.";
+  } else if (!ticket.allowed) {
+    elements.resultTitle.textContent = "Entrada não autorizada";
+    elements.warning.textContent = "O pagamento ainda não foi quitado ou o ingresso foi cancelado.";
+  } else {
+    try {
+      await rpc("admin_checkin_ticket", { p_ticket_token: ticketToken });
+      authorized = true;
+      elements.resultTitle.textContent = "Entrada autorizada";
+      elements.warning.textContent = "Entrada registrada com sucesso.";
+    } catch (error) {
+      elements.resultTitle.textContent = "Não foi possível registrar";
+      elements.warning.textContent = "Tente ler o ingresso novamente.";
+      console.error("Check-in error", error);
+    }
+  }
+  elements.resultIcon.textContent = authorized ? "✓" : "!";
+  elements.resultIcon.className = `checkin-result-icon ${authorized ? "valid" : "blocked"}`;
+  elements.warning.className = `ticket-warning ${authorized ? "valid" : "blocked"}`;
+  if (!elements.result.open) elements.result.showModal();
   showError("");
 }
 
@@ -192,11 +207,20 @@ async function startCamera() {
   }
   try {
     elements.cameraPanel.hidden = false;
-    cameraScanner = new window.Html5Qrcode(elements.qrReader.id);
+    cameraScanner = new window.Html5Qrcode(elements.qrReader.id, {
+      formatsToSupport: [window.Html5QrcodeSupportedFormats.QR_CODE],
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+    });
     scanning = true;
     await cameraScanner.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
+      {
+        fps: 20,
+        qrbox: (width, height) => {
+          const size = Math.min(320, Math.floor(Math.min(width, height) * .78));
+          return { width: size, height: size };
+        },
+      },
       async (decodedText) => {
         if (!scanning) return;
         scanning = false;
@@ -265,19 +289,7 @@ elements.scanAnother.addEventListener("click", () => {
   ticketToken = null;
   history.replaceState(null, "", location.pathname);
   showScanner();
-});
-
-elements.confirm.addEventListener("click", async () => {
-  elements.confirm.disabled = true;
-  try {
-    await rpc("admin_checkin_ticket", { p_ticket_token: ticketToken });
-    elements.warning.textContent = "Entrada confirmada com sucesso.";
-    elements.warning.className = "ticket-warning valid";
-  } catch (error) {
-    elements.warning.textContent = "Não foi possível confirmar a entrada. Atualize a validação e tente novamente.";
-    elements.warning.className = "ticket-warning blocked";
-    console.error("Check-in error", error);
-  }
+  void startCamera();
 });
 
 window.addEventListener("pagehide", stopCamera);

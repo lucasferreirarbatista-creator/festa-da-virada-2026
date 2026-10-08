@@ -22,6 +22,8 @@ assert.match(tickets, /\["pending_review","partial","paid"\]/);
 assert.match(app, /\["pending_review", "partial", "paid"\]/);
 assert.match(checkin, /sessionStorage\.getItem\(SESSION_KEY\)/);
 assert.match(checkin, /Html5Qrcode/);
+assert.match(checkin, /fps: 20/);
+assert.match(checkin, /admin_checkin_ticket/);
 assert.match(checkinHtml, /.\/vendor\/html5-qrcode\.min\.js/);
 assert.match(checkin, /else showScanner\(\)/);
 assert.match(expiryFix, /coalesce\(rs\.cancelled_at, now\(\)\)/);

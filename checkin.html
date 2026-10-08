@@ -37,18 +37,18 @@
         </form>
         <a class="back-link" href="./admin.html">Voltar ao painel</a>
       </div>
-      <div id="ticket-result" hidden>
-        <div id="ticket-data" class="detail-grid checkin-details"></div>
-        <p id="ticket-warning" class="ticket-warning"></p>
-        <div class="checkin-actions">
-          <button id="confirm-entry" class="success-button" type="button">Confirmar entrada</button>
-          <button id="scan-another" class="secondary-button" type="button">Ler outro ingresso</button>
-        </div>
-        <a class="back-link" href="./admin.html">Voltar ao painel</a>
-      </div>
       <p id="error" class="form-error" role="alert" hidden></p>
     </section>
   </main>
+  <dialog id="ticket-result" class="checkin-dialog">
+    <div id="ticket-result-icon" class="checkin-result-icon" aria-hidden="true">✓</div>
+    <p class="eyebrow">CHECK-IN</p>
+    <h2 id="ticket-result-title">Entrada autorizada</h2>
+    <p id="ticket-warning" class="ticket-warning"></p>
+    <div id="ticket-data" class="detail-grid checkin-details"></div>
+    <button id="scan-another" class="primary-button" type="button">Ler outro ingresso</button>
+    <a class="back-link" href="./admin.html">Voltar ao painel</a>
+  </dialog>
   <script src="./config.js"></script>
   <script src="./vendor/html5-qrcode.min.js"></script>
   <script src="./checkin.js"></script>
