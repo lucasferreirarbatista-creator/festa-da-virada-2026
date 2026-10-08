@@ -28,7 +28,7 @@
         <p class="login-copy">Leia o QR Code do ingresso com a câmera ou cole o código manualmente.</p>
         <button id="start-camera" class="primary-button" type="button">Abrir câmera</button>
         <div id="camera-panel" class="camera-panel" hidden>
-          <video id="qr-video" playsinline muted></video>
+          <div id="qr-reader"></div>
           <p>Aponte a câmera para o QR Code.</p>
         </div>
         <form id="manual-ticket-form" class="manual-ticket-form">
@@ -50,6 +50,7 @@
     </section>
   </main>
   <script src="./config.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="./checkin.js"></script>
 </body>
 </html>

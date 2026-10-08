@@ -93,7 +93,8 @@ button:disabled { opacity: .55; cursor: wait; }
 .checkin-card { width: min(620px, 100%); }
 .checkin-card .login-copy { margin-bottom: 20px; }
 .camera-panel { margin: 18px 0; overflow: hidden; border-radius: 16px; background: var(--navy); color: white; text-align: center; }
-.camera-panel video { display: block; width: 100%; max-height: 360px; object-fit: cover; }
+.camera-panel #qr-reader { width: 100%; border: 0 !important; background: white; color: var(--navy); }
+.camera-panel #qr-reader video { max-height: 360px; object-fit: cover; }
 .camera-panel p { margin: 0; padding: 10px; font-size: 13px; }
 .manual-ticket-form { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line); }
 .checkin-details { grid-template-columns: repeat(2, 1fr); }

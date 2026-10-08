@@ -20,7 +20,7 @@ assert.match(tickets, /checkin\.html\?t=/);
 assert.match(tickets, /\["pending_review","partial","paid"\]/);
 assert.match(app, /\["pending_review", "partial", "paid"\]/);
 assert.match(checkin, /sessionStorage\.getItem\(SESSION_KEY\)/);
-assert.match(checkin, /BarcodeDetector/);
+assert.match(checkin, /Html5Qrcode/);
 assert.match(checkin, /else showScanner\(\)/);
 assert.match(expiryFix, /coalesce\(rs\.cancelled_at, now\(\)\)/);
 assert.match(expiryFix, /coalesce\(rg\.cancelled_at, now\(\)\)/);

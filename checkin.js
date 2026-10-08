@@ -4,7 +4,7 @@ const SESSION_KEY = "fv26_admin_session";
 let session = null;
 let ticket = null;
 let ticketToken = new URLSearchParams(location.search).get("t");
-let cameraStream = null;
+let cameraScanner = null;
 let scanning = false;
 
 const elements = {
@@ -18,7 +18,7 @@ const elements = {
   confirm: document.getElementById("confirm-entry"),
   startCamera: document.getElementById("start-camera"),
   cameraPanel: document.getElementById("camera-panel"),
-  video: document.getElementById("qr-video"),
+  qrReader: document.getElementById("qr-reader"),
   manualForm: document.getElementById("manual-ticket-form"),
   ticketCode: document.getElementById("ticket-code"),
   scanAnother: document.getElementById("scan-another"),
@@ -100,11 +100,16 @@ function showError(message = "") {
 
 function stopCamera() {
   scanning = false;
-  cameraStream?.getTracks().forEach((track) => track.stop());
-  cameraStream = null;
-  elements.video.srcObject = null;
+  if (cameraScanner) {
+    const scanner = cameraScanner;
+    cameraScanner = null;
+    Promise.resolve(scanner.stop()).catch(() => {}).finally(() => {
+      try { scanner.clear(); } catch {}
+    });
+  }
   elements.cameraPanel.hidden = true;
   elements.startCamera.textContent = "Abrir câmera";
+  elements.startCamera.disabled = false;
 }
 
 function showLogin(message = "") {
@@ -176,36 +181,35 @@ async function validateToken(value) {
 }
 
 async function startCamera() {
-  showError("");
-  if (!("BarcodeDetector" in window)) {
-    showError("Este navegador não permite leitura pela câmera. Cole o link ou código do ingresso abaixo.");
+  elements.startCamera.disabled = true;
+  elements.startCamera.textContent = "Solicitando acesso à câmera…";
+  showError("Autorize o uso da câmera quando o navegador solicitar.");
+  if (!navigator.mediaDevices?.getUserMedia || typeof window.Html5Qrcode !== "function") {
+    elements.startCamera.disabled = false;
+    elements.startCamera.textContent = "Abrir câmera";
+    showError("Este navegador não permitiu iniciar o leitor. Cole o link ou código do ingresso abaixo.");
     return;
   }
   try {
-    const formats = await BarcodeDetector.getSupportedFormats();
-    if (!formats.includes("qr_code")) throw new Error("unsupported");
-    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
-    elements.video.srcObject = cameraStream;
-    await elements.video.play();
     elements.cameraPanel.hidden = false;
-    elements.startCamera.textContent = "Câmera ativa";
+    cameraScanner = new window.Html5Qrcode(elements.qrReader.id);
     scanning = true;
-    const detector = new BarcodeDetector({ formats: ["qr_code"] });
-    const scan = async () => {
-      if (!scanning) return;
-      try {
-        const codes = await detector.detect(elements.video);
-        if (codes[0]?.rawValue) {
-          scanning = false;
-          await validateToken(codes[0].rawValue);
-          return;
+    await cameraScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      async (decodedText) => {
+        if (!scanning) return;
+        scanning = false;
+        try { await validateToken(decodedText); }
+        catch (error) {
+          console.error("Ticket validation error", error);
+          showScanner("QR Code inválido ou ingresso não encontrado.");
         }
-      } catch (error) {
-        console.error("QR scan error", error);
-      }
-      if (scanning) requestAnimationFrame(scan);
-    };
-    requestAnimationFrame(scan);
+      },
+      () => {},
+    );
+    elements.startCamera.textContent = "Câmera ativa";
+    showError("");
   } catch (error) {
     stopCamera();
     showError("Não foi possível abrir a câmera. Autorize o acesso ou use o campo de código manual.");
@@ -254,7 +258,7 @@ elements.manualForm.addEventListener("submit", async (event) => {
   }
 });
 
-elements.startCamera.addEventListener("click", () => { if (!cameraStream) void startCamera(); });
+elements.startCamera.addEventListener("click", () => { if (!cameraScanner) void startCamera(); });
 
 elements.scanAnother.addEventListener("click", () => {
   ticket = null;
