@@ -133,11 +133,11 @@ begin
    where rs.seat_id = s.id and r.status = 'expired' and rs.item_status = 'active';
 
   update public.reservation_seats rs
-     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(cancelled_at,now())
+     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(rs.cancelled_at,now())
     from public.reservations r
    where r.id=rs.reservation_id and r.status='expired' and rs.item_status='active';
   update public.reservation_guests rg
-     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(cancelled_at,now())
+     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(rg.cancelled_at,now())
     from public.reservations r
    where r.id=rg.reservation_id and r.status='expired' and rg.item_status='active';
 
@@ -167,11 +167,11 @@ begin
    where rs.seat_id = s.id and r.status = 'expired' and rs.item_status = 'active';
 
   update public.reservation_seats rs
-     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(cancelled_at,now())
+     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(rs.cancelled_at,now())
     from public.reservations r
    where r.id=rs.reservation_id and r.status='expired' and rs.item_status='active';
   update public.reservation_guests rg
-     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(cancelled_at,now())
+     set ticket_status='cancelled', item_status='cancelled', cancelled_at=coalesce(rg.cancelled_at,now())
     from public.reservations r
    where r.id=rg.reservation_id and r.status='expired' and rg.item_status='active';
 
