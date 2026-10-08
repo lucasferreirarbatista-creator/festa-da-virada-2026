@@ -30,6 +30,8 @@ assert.match(checkinHtml, /.\/vendor\/html5-qrcode\.min\.js/);
 assert.match(admin, /admin_export_participants/);
 assert.match(admin, /metric-confirmed-breakdown/);
 assert.match(adminHtml, /class="metric-seats"/);
+assert.match(adminHtml, /dashboard-action-stack/);
+assert.match(adminHtml, /checkin-button/);
 assert.match(checkin, /else showScanner\(\)/);
 assert.match(expiryFix, /coalesce\(rs\.cancelled_at, now\(\)\)/);
 assert.match(expiryFix, /coalesce\(rg\.cancelled_at, now\(\)\)/);

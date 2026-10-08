@@ -51,7 +51,14 @@
             <h1>Reservas e pagamentos</h1>
             <p>Acompanhe a ocupação, confira comprovantes e libere cadeiras quando necessário.</p>
           </div>
-          <div class="dashboard-actions"><a class="secondary-button link-button" href="./checkin.html">Validar QR Code</a><button id="export-button" class="secondary-button" type="button">Baixar relatório CSV</button><button id="print-report-button" class="secondary-button" type="button">Imprimir relatório</button><button id="refresh-button" class="secondary-button" type="button">Atualizar dados</button></div>
+          <div class="dashboard-action-stack">
+            <button id="refresh-button" class="refresh-button" type="button" aria-label="Atualizar dados do painel">↻ Atualizar dados</button>
+            <div class="dashboard-actions">
+              <a class="primary-button link-button checkin-button" href="./checkin.html">Validar QR Code</a>
+              <button id="export-button" class="secondary-button" type="button">Baixar relatório CSV</button>
+              <button id="print-report-button" class="secondary-button" type="button">Imprimir relatório</button>
+            </div>
+          </div>
         </div>
 
         <section class="metrics" aria-label="Resumo do evento">

@@ -113,8 +113,13 @@ button:disabled { opacity: .55; cursor: wait; }
 
 .dashboard { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 42px 0 80px; }
 .dashboard-heading, .section-title, .detail-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.dashboard-heading { align-items: flex-start; }
+.dashboard-action-stack { display: grid; justify-items: end; gap: 12px; }
 .dashboard-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
 .link-button { display:inline-flex; align-items:center; text-decoration:none; }
+.checkin-button { border-color: var(--navy); box-shadow: 0 8px 20px rgba(7, 26, 61, .16); }
+.refresh-button { min-height: 32px; padding: 0 5px; border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.refresh-button:hover { color: var(--navy); }
 .dashboard-heading h1 { margin-bottom: 9px; font-size: clamp(34px, 4vw, 52px); }
 .dashboard-heading p:not(.eyebrow), .section-title p { margin-bottom: 0; color: var(--muted); }
 
@@ -201,6 +206,9 @@ button:disabled { opacity: .55; cursor: wait; }
   .login-card { padding: 30px 23px; }
   .dashboard { width: min(100% - 24px, 1120px); padding-top: 26px; }
   .dashboard-heading { align-items: flex-start; flex-direction: column; }
+  .dashboard-action-stack { width: 100%; justify-items: stretch; }
+  .dashboard-actions { justify-content: flex-start; }
+  .refresh-button { justify-self: end; }
   .metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
   .metrics article { min-height: 124px; padding: 16px; }
   .metrics strong { font-size: 25px; }
