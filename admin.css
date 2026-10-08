@@ -122,9 +122,10 @@ button:disabled { opacity: .55; cursor: wait; }
 .metrics article { min-height: 142px; padding: 22px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 10px 26px rgba(7, 26, 61, .05); }
 .metrics span, .metrics small { color: var(--muted); font-size: 13px; }
 .metrics strong { display: block; margin: 12px 0 6px; font: 500 30px/1 "Playfair Display", serif; }
-.metrics .metric-revenue { color: white; background: linear-gradient(145deg, var(--navy), var(--navy-soft)); border-color: var(--gold); box-shadow: 0 14px 32px rgba(7, 26, 61, .2); }
-.metrics .metric-revenue span { color: #f5d99f; }
-.metrics .metric-revenue small { color: rgba(255, 255, 255, .75); }
+.metrics .metric-seats { color: white; background: linear-gradient(145deg, var(--navy), var(--navy-soft)); border-color: var(--gold); box-shadow: 0 14px 32px rgba(7, 26, 61, .2); }
+.metrics .metric-seats span { color: #f5d99f; }
+.metrics .metric-seats small { display: block; color: rgba(255, 255, 255, .75); }
+.metrics .metric-seats #metric-confirmed-breakdown { margin-bottom: 4px; color: white; font-weight: 600; }
 
 .reservations-section { padding: 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
 .section-title h2 { margin-bottom: 7px; font-size: 28px; }

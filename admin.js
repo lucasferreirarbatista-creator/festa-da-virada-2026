@@ -189,9 +189,20 @@ function showDashboard() {
 }
 
 async function loadDashboard() {
-  const data = await rpc("admin_dashboard", { p_event_slug: CONFIG.eventSlug });
+  const [data, participants] = await Promise.all([
+    rpc("admin_dashboard", { p_event_slug: CONFIG.eventSlug }),
+    rpc("admin_export_participants", { p_event_slug: CONFIG.eventSlug }),
+  ]);
+  const confirmedParticipants = participants.filter((participant) =>
+    participant.item_status === "active"
+    && participant.seat_code
+    && ["partial", "paid"].includes(participant.payment_status)
+  );
+  const confirmedFull = confirmedParticipants.filter((participant) => participant.category === "full").length;
+  const confirmedHalf = confirmedParticipants.filter((participant) => participant.category === "half").length;
   document.getElementById("metric-confirmed-seats").textContent = data.confirmed_seats;
-  document.getElementById("metric-capacity").textContent = `de ${data.total_seats}`;
+  document.getElementById("metric-confirmed-breakdown").textContent = `${confirmedFull} inteira${confirmedFull === 1 ? "" : "s"} · ${confirmedHalf} meia${confirmedHalf === 1 ? "" : "s"}`;
+  document.getElementById("metric-capacity").textContent = `de ${data.total_seats} cadeiras`;
   document.getElementById("metric-pending-seats").textContent = data.pending_seats;
   document.getElementById("metric-pending-reservations").textContent = `${data.pending_reservations} reserva${data.pending_reservations === 1 ? "" : "s"}`;
   document.getElementById("metric-available-seats").textContent = data.available_seats;

@@ -6,6 +6,8 @@ const app = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const tickets = readFileSync(new URL("../tickets.js", import.meta.url), "utf8");
 const checkin = readFileSync(new URL("../checkin.js", import.meta.url), "utf8");
 const checkinHtml = readFileSync(new URL("../checkin.html", import.meta.url), "utf8");
+const admin = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
+const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const expiryFix = readFileSync(new URL("../supabase/migrations/010_fix_expiry_cancelled_at.sql", import.meta.url), "utf8");
 
 assert.match(migration, /full_seat_limit smallint not null default 350/);
@@ -25,6 +27,9 @@ assert.match(checkin, /Html5Qrcode/);
 assert.match(checkin, /fps: 20/);
 assert.match(checkin, /admin_checkin_ticket/);
 assert.match(checkinHtml, /.\/vendor\/html5-qrcode\.min\.js/);
+assert.match(admin, /admin_export_participants/);
+assert.match(admin, /metric-confirmed-breakdown/);
+assert.match(adminHtml, /class="metric-seats"/);
 assert.match(checkin, /else showScanner\(\)/);
 assert.match(expiryFix, /coalesce\(rs\.cancelled_at, now\(\)\)/);
 assert.match(expiryFix, /coalesce\(rg\.cancelled_at, now\(\)\)/);
