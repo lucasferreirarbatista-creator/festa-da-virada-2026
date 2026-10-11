@@ -35,7 +35,8 @@
               <div><dt>Local</dt><dd>Salão Triunfo · Canaã<small>Rua dos Filipenses, 85 · Ipatinga/MG</small></dd></div>
             </dl>
 
-            <button class="primary-button hero-button" id="start-button" type="button">Escolher meus lugares</button>
+            <button class="primary-button hero-button" id="start-button" type="button">Fazer nova reserva</button>
+            <a class="secondary-button" href="#consultar-inscricao">Consultar inscrição / concluir pagamento</a>
             <p class="capacity">400 lugares · 50 mesas</p>
           </div>
         </div>
@@ -78,9 +79,24 @@
             <li><span>4</span><p><strong>Envie</strong> o comprovante e receba seu protocolo.</p></li>
           </ol>
         </section>
+
+      <section id="consultar-inscricao" class="lookup-section" aria-labelledby="lookup-title">
+        <h2 id="lookup-title">Consultar inscrição e concluir pagamento</h2>
+        <p>Informe o protocolo e o CPF do responsável para acompanhar a confirmação, consultar o saldo ou pagar o restante.</p>
+        <form id="lookup-form" class="lookup-form">
+          <label>Protocolo<input id="lookup-protocol" type="text" placeholder="FV26-XXXXXXXX" required maxlength="13" autocapitalize="characters" spellcheck="false"></label>
+          <label>CPF do responsável<input id="lookup-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" required maxlength="14" autocomplete="off"></label>
+          <button id="lookup-submit" class="primary-button" type="submit">Consultar inscrição</button>
+        </form>
+        <p id="lookup-error" class="error-message" role="alert" hidden></p>
+        <button id="resume-reservation-button" class="secondary-button" type="button" hidden>Abrir última inscrição neste aparelho</button>
+        <p class="lookup-note">O valor pago é atualizado após a conferência da equipe. Se houver comprovante em análise, aguarde a confirmação antes de pagar novamente.</p>
+      </section>
+
       </section>
 
       <section id="registration" class="registration" hidden aria-label="Inscrição para o evento">
+        <button id="home-button" class="secondary-button" type="button">Voltar à página inicial</button>
         <nav class="progress" aria-label="Etapas da inscrição">
           <ol>
             <li class="active"><span>1</span><small>Lugares</small></li>
@@ -208,6 +224,8 @@
             <div class="reservation-card">
               <div><small>Protocolo</small><strong id="payment-protocol">—</strong></div>
               <div><small>Total da reserva</small><strong id="payment-total">R$ 0,00</strong></div>
+              <div><small>Pagamento confirmado</small><strong id="payment-paid">R$ 0,00</strong></div>
+              <div><small>Saldo a pagar</small><strong id="payment-balance">R$ 0,00</strong></div>
               <div><small>Tempo restante</small><strong id="payment-countdown">15:00</strong></div>
             </div>
             <section class="payment-options" id="payment-options">
@@ -269,11 +287,13 @@
               <span id="conclusion-status">Aguardando conferência</span>
             </div>
             <div class="conclusion-details">
+              <div class="reservation-amounts"><p>Total <strong id="conclusion-total"></strong></p><p>Pagamento confirmado <strong id="conclusion-paid"></strong></p><p>Saldo a pagar <strong id="conclusion-balance"></strong></p></div>
               <h3>Lugares reservados</h3>
               <div id="conclusion-seats" class="selected-seat-list"></div>
               <p>Guarde o protocolo. A confirmação será realizada pelos contatos informados na inscrição.</p>
               <div class="conclusion-actions">
                 <button id="open-tickets-button" class="primary-button" type="button">Baixar protocolos e QR Codes</button>
+                <button id="new-reservation-button" class="secondary-button" type="button">Fazer nova reserva</button>
                 <button id="pay-balance-button" class="secondary-button" type="button" hidden>Pagar saldo</button>
               </div>
             </div>

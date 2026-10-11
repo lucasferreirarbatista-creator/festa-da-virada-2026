@@ -555,6 +555,8 @@ function renderPayment() {
   document.getElementById("payment-protocol").textContent = state.reservation.protocol;
   const total = Number(state.reservation.total_amount);
   document.getElementById("payment-total").textContent = money.format(total);
+  renderAmounts("payment");
+  document.getElementById("proof-file").disabled = false;
   document.getElementById("pix-receiver").textContent = CONFIG.pixReceiverName;
   document.getElementById("payment-options").hidden = false;
   document.getElementById("payment-content").hidden = true;
@@ -584,6 +586,7 @@ async function startPayment() {
   state.paymentMethod = document.querySelector('[name="payment-method"]:checked').value;
   const button = document.getElementById("start-payment-button");
   button.disabled = true;
+  state.busy = true;
   showPaymentError("");
   try {
     const result = await supabaseRequest("rpc/start_payment", { method: "POST", body: JSON.stringify({
@@ -606,7 +609,7 @@ async function startPayment() {
   } catch (error) {
     showPaymentError("Não foi possível iniciar o pagamento. Atualize a reserva e tente novamente.");
     console.error("Start payment error", error);
-  } finally { button.disabled = false; }
+  } finally { state.busy = false; button.disabled = false; updateProgress(); }
 }
 
 function showPaymentError(message) {
@@ -620,7 +623,7 @@ function renderConclusion() {
   clearInterval(countdownTimer);
   const status = state.reservation.status;
   const isConfirmed = status === "confirmed";
-  const isPartial = status === "partially_paid" || state.reservation.payment_status === "partial";
+  const isPartial = status === "partially_paid";
   const isCash = status === "awaiting_cash";
   document.getElementById("conclusion-title").textContent = isConfirmed
     ? "Inscrição confirmada"
@@ -637,6 +640,7 @@ function renderConclusion() {
   const tickets = document.getElementById("open-tickets-button");
   tickets.hidden = !["pending_review", "partial", "paid"].includes(state.reservation.payment_status);
   document.getElementById("pay-balance-button").hidden = !isPartial;
+  renderAmounts("conclusion");
 }
 
 function validProofFile(file) {
@@ -660,7 +664,7 @@ async function submitPayment() {
   showPaymentError("");
   try {
     let result;
-      const tokenHash = await sha256Hex(state.reservationAccessToken);
+      const tokenHash = state.reservation.proof_folder ?? await sha256Hex(state.reservationAccessToken);
       const extension = state.proofFile.type === "application/pdf" ? "pdf" : state.proofFile.type === "image/png" ? "png" : "jpg";
       const storagePath = `${tokenHash}/${crypto.randomUUID()}.${extension}`;
       await storageUpload(storagePath, state.proofFile);
@@ -705,7 +709,7 @@ async function createReservation() {
     });
     state.reservation = reservation;
     state.reservationAccessToken = accessToken;
-    localStorage.setItem(RESERVATION_STORAGE_KEY, JSON.stringify({ accessToken }));
+    saveAccess(accessToken);
     renderPayment();
     showStep(4);
   } catch (error) {
@@ -742,46 +746,134 @@ function showRegistration() {
   showStep(1);
 }
 
-async function restoreReservation() {
-  let saved;
-  try { saved = JSON.parse(localStorage.getItem(RESERVATION_STORAGE_KEY)); } catch { return; }
-  if (!saved?.accessToken) return;
+function saveAccess(accessToken) {
   try {
-    const reservation = await supabaseRequest("rpc/get_reservation", {
-      method: "POST",
-      body: JSON.stringify({ p_access_token: saved.accessToken }),
-    });
-    if (!reservation || ["expired", "cancelled", "rejected"].includes(reservation.status)) {
-      localStorage.removeItem(RESERVATION_STORAGE_KEY);
-      return;
-    }
-    state.reservation = reservation;
-    state.reservationAccessToken = saved.accessToken;
-    reservation.seats.filter((seat) => seat.item_status === "active").forEach((seat) => {
-      state.selectedSeats.add(seat.code);
-      state.participants[seat.code] = { name: seat.name, category: seat.category, price: Number(seat.price) };
-    });
-    showRegistration();
-    state.freeChildren = (reservation.free_children ?? []).filter((child) => child.item_status === "active").map((child) => ({ name: child.name, birthDate: child.birth_date }));
-    if (["held", "partially_paid"].includes(reservation.status) && (reservation.status !== "held" || new Date(reservation.expires_at) > new Date())) {
-      renderPayment();
-      showStep(4);
-    } else if (["pending_review", "awaiting_cash", "confirmed"].includes(reservation.status)) {
-      renderConclusion();
-      showStep(5);
-    } else {
-      localStorage.removeItem(RESERVATION_STORAGE_KEY);
-    }
-  } catch (error) {
-    localStorage.removeItem(RESERVATION_STORAGE_KEY);
-    console.error("Restore reservation error", error);
+    localStorage.setItem(RESERVATION_STORAGE_KEY, JSON.stringify({ accessToken }));
+    document.getElementById("resume-reservation-button").hidden = false;
+  } catch { /* The protocol lookup remains available when storage is blocked. */ }
+}
+
+function renderAmounts(prefix) {
+  const total = Number(state.reservation.total_amount ?? 0);
+  const paid = Number(state.reservation.paid_amount ?? 0);
+  document.getElementById(`${prefix}-paid`).textContent = money.format(paid);
+  document.getElementById(`${prefix}-balance`).textContent = money.format(Math.max(total - paid, 0));
+  if (prefix === "conclusion") document.getElementById("conclusion-total").textContent = money.format(total);
+}
+
+function resetRegistration() {
+  clearInterval(countdownTimer);
+  state.selectedSeats.clear();
+  state.participants = {};
+  state.freeChildren = [];
+  state.reservation = null;
+  state.reservationAccessToken = null;
+  state.proofFile = null;
+  state.paymentStarted = false;
+  state.paymentDue = 0;
+  state.paymentPlan = "full";
+  state.paymentMethod = "pix";
+  document.querySelectorAll("#registration input").forEach(input => {
+    if (input.type === "radio") input.checked = ["full", "pix"].includes(input.value);
+    else if (input.type === "checkbox") input.checked = false;
+    else input.value = "";
+  });
+  document.getElementById("proof-file").disabled = false;
+  document.getElementById("proof-file-name").textContent = "Nenhum arquivo selecionado";
+  showPaymentError("");
+  showReservationError("");
+  document.getElementById("form-errors").hidden = true;
+  document.getElementById("form-errors").innerHTML = "";
+  renderMap();
+  renderSelection();
+}
+
+function beginNewReservation() {
+  if (state.busy) return;
+  resetRegistration();
+  showRegistration();
+  void loadSeatStatuses();
+}
+
+function showHome() {
+  if (state.busy) return;
+  clearInterval(countdownTimer);
+  document.getElementById("landing").hidden = false;
+  document.getElementById("registration").hidden = true;
+  document.querySelector(".site-footer").hidden = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openReservation(reservation, accessToken) {
+  resetRegistration();
+  state.reservation = reservation;
+  state.reservationAccessToken = accessToken;
+  (reservation.seats ?? []).filter(seat => seat.item_status === "active").forEach(seat => {
+    state.selectedSeats.add(seat.code);
+    state.participants[seat.code] = { name: seat.name, category: seat.category, price: Number(seat.price) };
+  });
+  state.freeChildren = (reservation.free_children ?? []).filter(child => child.item_status === "active").map(child => ({ name: child.name, birthDate: child.birth_date }));
+  saveAccess(accessToken);
+  document.getElementById("resume-reservation-button").hidden = false;
+  showRegistration();
+  if (reservation.status === "held") { renderPayment(); showStep(4); }
+  else { renderConclusion(); showStep(5); }
+}
+
+async function consultReservation(event) {
+  event?.preventDefault();
+  const errorBox = document.getElementById("lookup-error");
+  const button = document.getElementById("lookup-submit");
+  errorBox.hidden = true;
+  const protocol = document.getElementById("lookup-protocol").value.trim().toUpperCase();
+  const cpf = digits(document.getElementById("lookup-cpf").value);
+  if (!/^FV26-[A-F0-9]{8}$/.test(protocol) || !validCpf(cpf)) {
+    errorBox.textContent = "Confira o protocolo e o CPF do responsável pela inscrição.";
+    errorBox.hidden = false;
+    return;
   }
+  button.disabled = true;
+  state.busy = true;
+  try {
+    const accessToken = createAccessToken();
+    const reservation = await supabaseRequest("rpc/recover_reservation", { method: "POST", body: JSON.stringify({ p_protocol: protocol, p_buyer_cpf: cpf, p_new_access_token: accessToken }) });
+    if (!reservation) throw new Error("lookup_failed");
+    openReservation(reservation, accessToken);
+    document.getElementById("lookup-cpf").value = "";
+  } catch (error) {
+    errorBox.textContent = "Não foi possível consultar. Confira protocolo e CPF ou tente novamente em alguns minutos.";
+    errorBox.hidden = false;
+    console.error("Reservation lookup error", error);
+  } finally { state.busy = false; button.disabled = false; }
+}
+
+async function restoreReservation() {
+  const errorBox = document.getElementById("lookup-error");
+  const button = document.getElementById("resume-reservation-button");
+  errorBox.hidden = true;
+  button.disabled = true;
+  state.busy = true;
+  try {
+    const saved = JSON.parse(localStorage.getItem(RESERVATION_STORAGE_KEY));
+    if (!saved?.accessToken) throw new Error("missing_saved_reservation");
+    const reservation = await supabaseRequest("rpc/get_reservation", { method: "POST", body: JSON.stringify({ p_access_token: saved.accessToken }) });
+    if (!reservation || ["expired", "cancelled", "rejected"].includes(reservation.status)) throw new Error("reservation_unavailable");
+    openReservation(reservation, saved.accessToken);
+  } catch (error) {
+    errorBox.textContent = "Não foi possível abrir a última inscrição. Consulte com protocolo e CPF ou faça uma nova reserva.";
+    errorBox.hidden = false;
+  } finally { state.busy = false; button.disabled = false; }
 }
 
 async function init() {
   renderMap();
   renderSelection();
-  document.getElementById("start-button").addEventListener("click", showRegistration);
+  document.getElementById("start-button").addEventListener("click", beginNewReservation);
+  document.getElementById("home-button").addEventListener("click", showHome);
+  document.getElementById("new-reservation-button").addEventListener("click", beginNewReservation);
+  document.getElementById("lookup-form").addEventListener("submit", consultReservation);
+  document.getElementById("resume-reservation-button").addEventListener("click", () => { void restoreReservation(); });
+  try { document.getElementById("resume-reservation-button").hidden = !JSON.parse(localStorage.getItem(RESERVATION_STORAGE_KEY))?.accessToken; } catch { /* Invalid or unavailable storage leaves lookup available. */ }
   document.querySelectorAll(".area-tabs button").forEach((button) => button.addEventListener("click", () => filterArea(button.dataset.area)));
   document.getElementById("zoom-in").addEventListener("click", () => setZoom(state.zoom + .1));
   document.getElementById("zoom-out").addEventListener("click", () => setZoom(state.zoom - .1));
@@ -813,7 +905,6 @@ async function init() {
     updateProgress();
   });
   await loadSeatStatuses();
-  await restoreReservation();
   setInterval(() => { if (!document.getElementById("registration").hidden) void loadSeatStatuses({ silent: true }); }, 60000);
 }
 
