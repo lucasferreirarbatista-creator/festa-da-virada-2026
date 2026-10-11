@@ -9,6 +9,8 @@ const checkinHtml = readFileSync(new URL("../checkin.html", import.meta.url), "u
 const admin = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const expiryFix = readFileSync(new URL("../supabase/migrations/010_fix_expiry_cancelled_at.sql", import.meta.url), "utf8");
+const recovery = readFileSync(new URL("../supabase/migrations/011_reservation_recovery.sql", import.meta.url), "utf8");
+const indexHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 assert.match(migration, /full_seat_limit smallint not null default 350/);
 assert.match(migration, /half_seat_limit smallint not null default 50/);
@@ -35,5 +37,15 @@ assert.match(adminHtml, /checkin-button/);
 assert.match(checkin, /else showScanner\(\)/);
 assert.match(expiryFix, /coalesce\(rs\.cancelled_at, now\(\)\)/);
 assert.match(expiryFix, /coalesce\(rg\.cancelled_at, now\(\)\)/);
+assert.match(recovery, /recover_reservation_access/);
+assert.match(recovery, /upper\(protocol\) = upper\(trim\(p_protocol\)\)/);
+assert.match(recovery, /buyer_cpf = clean_cpf/);
+assert.match(recovery, /digest\(new_access_token, 'sha256'\)/);
+assert.match(app, /showSavedReservationShortcut/);
+assert.doesNotMatch(app, /await restoreReservation\(\);\n  setInterval/);
+assert.match(indexHtml, /Consultar inscrição \/ pagar saldo/);
+assert.match(indexHtml, /CPF do responsável/);
+assert.match(indexHtml, /id="payment-paid"/);
+assert.match(indexHtml, /id="payment-balance"/);
 
 console.log("Feature contract tests passed.");

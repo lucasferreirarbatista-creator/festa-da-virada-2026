@@ -35,7 +35,14 @@
               <div><dt>Local</dt><dd>Salão Triunfo · Canaã<small>Rua dos Filipenses, 85 · Ipatinga/MG</small></dd></div>
             </dl>
 
-            <button class="primary-button hero-button" id="start-button" type="button">Escolher meus lugares</button>
+            <div class="hero-actions">
+              <button class="primary-button hero-button" id="start-button" type="button">Fazer nova reserva</button>
+              <button class="hero-secondary-button" id="lookup-button" type="button">Consultar inscrição / pagar saldo</button>
+            </div>
+            <div class="saved-reservation" id="saved-reservation" hidden>
+              <span id="saved-reservation-message">Encontramos uma inscrição salva neste dispositivo.</span>
+              <button id="resume-saved-button" type="button">Acessar inscrição</button>
+            </div>
             <p class="capacity">400 lugares · 50 mesas</p>
           </div>
         </div>
@@ -208,6 +215,8 @@
             <div class="reservation-card">
               <div><small>Protocolo</small><strong id="payment-protocol">—</strong></div>
               <div><small>Total da reserva</small><strong id="payment-total">R$ 0,00</strong></div>
+              <div><small>Valor confirmado</small><strong id="payment-paid">R$ 0,00</strong></div>
+              <div><small>Saldo restante</small><strong id="payment-balance">R$ 0,00</strong></div>
               <div><small>Tempo restante</small><strong id="payment-countdown">15:00</strong></div>
             </div>
             <section class="payment-options" id="payment-options">
@@ -289,6 +298,23 @@
         </footer>
       </section>
     </main>
+
+    <dialog class="lookup-dialog" id="lookup-dialog" aria-labelledby="lookup-title">
+      <form class="lookup-form" id="lookup-form" method="dialog" novalidate>
+        <button class="dialog-close" id="lookup-close" type="button" aria-label="Fechar">×</button>
+        <p class="eyebrow dark">Minha inscrição</p>
+        <h2 id="lookup-title">Consultar ou pagar saldo</h2>
+        <p>Informe o protocolo e o CPF do responsável pela inscrição.</p>
+        <label>Protocolo
+          <input id="lookup-protocol" autocomplete="off" placeholder="FV26-XXXXXXXX" required />
+        </label>
+        <label>CPF do responsável
+          <input id="lookup-cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" required />
+        </label>
+        <div id="lookup-error" class="form-errors" role="alert" hidden></div>
+        <button class="primary-button" id="lookup-submit" type="submit">Consultar inscrição</button>
+      </form>
+    </dialog>
 
     <footer class="site-footer">
       <div class="brand inverse"><img class="brand-symbol" src="./assets/iba-symbol-inverse.png" alt="" /><span class="brand-copy"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></span></div>

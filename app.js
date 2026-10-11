@@ -554,7 +554,11 @@ function renderPayment() {
   if (!state.reservation) return;
   document.getElementById("payment-protocol").textContent = state.reservation.protocol;
   const total = Number(state.reservation.total_amount);
+  const paid = Number(state.reservation.paid_amount ?? 0);
+  const balance = Number(state.reservation.balance_amount ?? Math.max(total - paid, 0));
   document.getElementById("payment-total").textContent = money.format(total);
+  document.getElementById("payment-paid").textContent = money.format(paid);
+  document.getElementById("payment-balance").textContent = money.format(balance);
   document.getElementById("pix-receiver").textContent = CONFIG.pixReceiverName;
   document.getElementById("payment-options").hidden = false;
   document.getElementById("payment-content").hidden = true;
@@ -742,21 +746,56 @@ function showRegistration() {
   showStep(1);
 }
 
-async function restoreReservation() {
-  let saved;
-  try { saved = JSON.parse(localStorage.getItem(RESERVATION_STORAGE_KEY)); } catch { return; }
+function savedAccess() {
+  try { return JSON.parse(localStorage.getItem(RESERVATION_STORAGE_KEY)); } catch { return null; }
+}
+
+function saveAccess(accessToken) {
+  localStorage.setItem(RESERVATION_STORAGE_KEY, JSON.stringify({ accessToken }));
+}
+
+function removeSavedAccess(accessToken) {
+  if (!accessToken || savedAccess()?.accessToken === accessToken) localStorage.removeItem(RESERVATION_STORAGE_KEY);
+}
+
+async function fetchReservation(accessToken) {
+  return supabaseRequest("rpc/get_reservation", {
+    method: "POST",
+    body: JSON.stringify({ p_access_token: accessToken }),
+  });
+}
+
+async function showSavedReservationShortcut() {
+  const saved = savedAccess();
   if (!saved?.accessToken) return;
   try {
-    const reservation = await supabaseRequest("rpc/get_reservation", {
-      method: "POST",
-      body: JSON.stringify({ p_access_token: saved.accessToken }),
-    });
+    const reservation = await fetchReservation(saved.accessToken);
     if (!reservation || ["expired", "cancelled", "rejected"].includes(reservation.status)) {
-      localStorage.removeItem(RESERVATION_STORAGE_KEY);
+      removeSavedAccess(saved.accessToken);
+      return;
+    }
+    const box = document.getElementById("saved-reservation");
+    const balance = Number(reservation.balance_amount ?? 0);
+    document.getElementById("saved-reservation-message").textContent = balance > 0
+      ? `Inscrição ${reservation.protocol} salva neste aparelho · saldo ${money.format(balance)}`
+      : `Inscrição ${reservation.protocol} salva neste aparelho.`;
+    box.hidden = false;
+  } catch (error) {
+    if (/reservation_not_found/.test(error.message ?? "")) removeSavedAccess(saved.accessToken);
+    console.error("Saved reservation check error", error);
+  }
+}
+
+async function restoreReservation(accessToken = savedAccess()?.accessToken) {
+  if (!accessToken) return;
+  try {
+    const reservation = await fetchReservation(accessToken);
+    if (!reservation || ["expired", "cancelled", "rejected"].includes(reservation.status)) {
+      removeSavedAccess(accessToken);
       return;
     }
     state.reservation = reservation;
-    state.reservationAccessToken = saved.accessToken;
+    state.reservationAccessToken = accessToken;
     reservation.seats.filter((seat) => seat.item_status === "active").forEach((seat) => {
       state.selectedSeats.add(seat.code);
       state.participants[seat.code] = { name: seat.name, category: seat.category, price: Number(seat.price) };
@@ -770,11 +809,55 @@ async function restoreReservation() {
       renderConclusion();
       showStep(5);
     } else {
-      localStorage.removeItem(RESERVATION_STORAGE_KEY);
+      removeSavedAccess(accessToken);
     }
   } catch (error) {
-    localStorage.removeItem(RESERVATION_STORAGE_KEY);
+    if (/reservation_not_found/.test(error.message ?? "")) removeSavedAccess(accessToken);
     console.error("Restore reservation error", error);
+    throw error;
+  }
+}
+
+function openLookupDialog() {
+  const dialog = document.getElementById("lookup-dialog");
+  document.getElementById("lookup-error").hidden = true;
+  dialog.showModal();
+  setTimeout(() => document.getElementById("lookup-protocol").focus(), 0);
+}
+
+async function recoverReservation(event) {
+  event.preventDefault();
+  const protocol = document.getElementById("lookup-protocol").value.trim().toUpperCase();
+  const cpf = document.getElementById("lookup-cpf").value;
+  const errorBox = document.getElementById("lookup-error");
+  const button = document.getElementById("lookup-submit");
+  errorBox.hidden = true;
+  if (!protocol || !validCpf(cpf)) {
+    errorBox.textContent = "Confira o protocolo e informe um CPF válido.";
+    errorBox.hidden = false;
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Consultando…";
+  try {
+    const result = await supabaseRequest("rpc/recover_reservation_access", {
+      method: "POST",
+      body: JSON.stringify({ p_protocol: protocol, p_buyer_cpf: digits(cpf) }),
+    });
+    saveAccess(result.access_token);
+    document.getElementById("lookup-dialog").close();
+    await restoreReservation(result.access_token);
+  } catch (error) {
+    const inactive = /reservation_not_active/.test(error.message ?? "");
+    errorBox.textContent = inactive
+      ? "Esta inscrição foi cancelada, rejeitada ou expirou. Fale com a organização para receber ajuda."
+      : "Não encontramos uma inscrição ativa com esse protocolo e CPF.";
+    errorBox.hidden = false;
+    if (!document.getElementById("lookup-dialog").open) document.getElementById("lookup-dialog").showModal();
+    console.error("Reservation recovery error", error);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Consultar inscrição";
   }
 }
 
@@ -782,6 +865,11 @@ async function init() {
   renderMap();
   renderSelection();
   document.getElementById("start-button").addEventListener("click", showRegistration);
+  document.getElementById("lookup-button").addEventListener("click", openLookupDialog);
+  document.getElementById("lookup-close").addEventListener("click", () => document.getElementById("lookup-dialog").close());
+  document.getElementById("lookup-form").addEventListener("submit", event => { void recoverReservation(event); });
+  document.getElementById("lookup-cpf").addEventListener("input", event => { event.target.value = maskCpf(event.target.value); });
+  document.getElementById("resume-saved-button").addEventListener("click", () => { void restoreReservation(); });
   document.querySelectorAll(".area-tabs button").forEach((button) => button.addEventListener("click", () => filterArea(button.dataset.area)));
   document.getElementById("zoom-in").addEventListener("click", () => setZoom(state.zoom + .1));
   document.getElementById("zoom-out").addEventListener("click", () => setZoom(state.zoom - .1));
@@ -813,7 +901,7 @@ async function init() {
     updateProgress();
   });
   await loadSeatStatuses();
-  await restoreReservation();
+  await showSavedReservationShortcut();
   setInterval(() => { if (!document.getElementById("registration").hidden) void loadSeatStatuses({ silent: true }); }, 60000);
 }
 

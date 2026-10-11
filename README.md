@@ -14,7 +14,9 @@ Aplicação web para inscrição, escolha de cadeiras e conferência de pagament
 - Estrutura inicial do Supabase em `supabase/migrations`.
 - Mapa conectado aos 400 lugares do Supabase.
 - Reserva transacional de cadeiras por 15 minutos.
-- Protocolo e retomada da reserva após recarregar a página.
+- Página inicial sem redirecionamento automático, permitindo novas reservas no mesmo aparelho.
+- Retomada da inscrição salva no navegador por escolha do visitante.
+- Consulta segura por protocolo e CPF para acompanhar a inscrição ou pagar o saldo em qualquer aparelho.
 - Pix copia e cola com o valor exato da reserva e QR Code gerado no navegador.
 - Upload privado de comprovantes JPG, PNG e PDF de até 10 MB.
 - 350 vagas de inteira e 50 vagas de meia-entrada; crianças de até 5 anos são cadastradas sem cadeira.
@@ -34,13 +36,13 @@ Aplicação web para inscrição, escolha de cadeiras e conferência de pagament
 
 ## Ativação da versão atual
 
-1. Execute `009_payments_tickets_and_capacity.sql` e depois `010_fix_expiry_cancelled_at.sql` no SQL Editor do Supabase.
+1. Execute `009_payments_tickets_and_capacity.sql`, `010_fix_expiry_cancelled_at.sql` e `011_reservation_recovery.sql` no SQL Editor do Supabase.
 2. Publique os arquivos do site.
 3. Faça uma reserva de teste com entrada de 30%, aprove o pagamento no painel e valide o QR Code.
 
 ## Migrações
 
-Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do Supabase. Em uma base já configurada até a migração 009, execute apenas `010_fix_expiry_cancelled_at.sql`.
+Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do Supabase. Em uma base já configurada até a migração 010, execute apenas `011_reservation_recovery.sql`.
 
 ## Primeiro administrador
 
