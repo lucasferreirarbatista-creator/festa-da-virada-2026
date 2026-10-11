@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1205 715">
+  <defs>
+    <style>
+      text { font-family: Inter, Arial, sans-serif; fill: #071a3d; }
+      .label { font-size: 12px; font-weight: 700; text-anchor: middle; }
+      .detail { font-size: 9px; font-weight: 600; fill: #687187; text-anchor: middle; }
+      .wall { fill: none; stroke: #58657a; stroke-width: 2; }
+      .door { fill: none; stroke: #8195b1; stroke-width: 1.5; }
+      .service { fill: #fafbfe; }
+    </style>
+  </defs>
+  <rect width="1205" height="715" fill="white"/>
+  <path d="M0 0H835V355H125V600H0Z" class="service"/>
+  <path d="M125 0H835V600H125Z" fill="#fcfdff"/>
+  <rect x="835" y="130" width="370" height="345" fill="#fcfdff"/>
+  <rect x="835" y="475" width="370" height="228" fill="white" stroke="#ccd4e0" stroke-dasharray="5 4"/>
+
+  <!-- Shared walls retain the openings to the veranda and covered expansion. -->
+  <path d="M0 355V0H835V177M835 332V355H525M434 355H0M125 0V600H835V355M125 355H434M525 355H835M0 355V600H125M0 120H125M0 220H125M0 295H125M835 130H1205V475H835V332" class="wall"/>
+  <path d="M0 355H125" class="door"/>
+  <path d="M835 475H1205" stroke="#58657a" stroke-width="2" stroke-dasharray="4 3"/>
+
+  <text x="62" y="58" class="label"><tspan x="62">COZINHA</tspan><tspan x="62" dy="15">E APOIO</tspan></text>
+  <text x="62" y="174" class="label">BANHEIROS</text>
+  <rect x="17" y="182" width="91" height="23" rx="3" fill="#e3ecfa" stroke="#8195b1"/>
+  <text x="62" y="197" class="detail">BEBIDAS</text>
+  <text x="62" y="260" class="label"><tspan x="62">LOUNGE /</tspan><tspan x="62" dy="15">RECEPÇÃO</tspan></text>
+  <text x="62" y="321" class="detail">ACESSO AO SALÃO</text>
+  <text x="62" y="388" class="label"><tspan x="62">HALL DE</tspan><tspan x="62" dy="15">ESCADAS</tspan></text>
+  <path d="M20 423H105M20 437H105M20 451H105M20 465H105M20 479H105M20 493H105M20 507H105M20 521H105M20 535H105M20 549H105" stroke="#d7dee9"/>
+
+  <rect x="228" y="164" width="240" height="34" rx="4" fill="#f8dda7" stroke="#a77a24" stroke-width="1.5"/>
+  <rect x="492" y="164" width="240" height="34" rx="4" fill="#f8dda7" stroke="#a77a24" stroke-width="1.5"/>
+  <text x="348" y="186" class="label" style="font-size:10px;fill:#79520e">ILHA QUENTE 1</text>
+  <text x="612" y="186" class="label" style="font-size:10px;fill:#79520e">ILHA QUENTE 2</text>
+  <path d="M204 181H224L218 178M224 181L218 184M470 181H488M470 181L475 178M470 181L475 184M488 181L483 178M488 181L483 184M756 181H736L742 178M736 181L742 184" fill="none" stroke="#a77a24"/>
+  <text x="480" y="155" class="detail" style="fill:#79520e">1,00 m</text>
+  <text x="480" y="212" class="detail" style="fill:#79520e">4 ENTRADAS DE SERVIÇO</text>
+
+  <path d="M434 355V369M525 355V369" class="door"/>
+  <path d="M480 355A45 45 0 0 1 525 400" class="door" stroke-dasharray="3 2"/>
+  <text x="480" y="347" class="detail">PORTA / ACESSO À VARANDA</text>
+  <path d="M828 177H842M828 332H842M835 181V328" class="door" stroke-dasharray="4 3"/>
+  <text x="819" y="254" class="detail" transform="rotate(-90 819 254)">PORTA / ACESSO À EXPANSÃO</text>
+  <path d="M811 255H831L825 251M831 255L825 259M859 268H839L845 264M839 268L845 272" class="door"/>
+
+  <rect x="438" y="552" width="84" height="33" rx="4" fill="#eadcf3" stroke="#9b7bae" stroke-width="1.5"/>
+  <text x="480" y="566" class="label" style="font-size:10px;fill:#77548c"><tspan x="480">MESA DE</tspan><tspan x="480" dy="12">DOCES</tspan></text>
+
+  <rect x="859" y="170" width="86" height="54" rx="4" fill="#d8eff0" stroke="#6c999c" stroke-width="1.5"/>
+  <text x="902" y="194" class="label" style="font-size:10px;fill:#477c80"><tspan x="902">ESTAÇÃO</tspan><tspan x="902" dy="13">DE SUCO</tspan></text>
+  <rect x="1035" y="170" width="93" height="54" rx="4" fill="#e3ecfa" stroke="#8195b1" stroke-width="1.5"/>
+  <text x="1081" y="201" class="label" style="font-size:10px;fill:#586f95">BANDA</text>
+
+  <text x="881" y="599" class="detail">ÁREA EXTERNA</text>
+  <path d="M924 608Q945 594 966 546Q987 594 1008 608Q1029 594 1050 546Q1071 594 1092 608Q1113 594 1134 546Q1155 594 1176 608Z" fill="#edf2fb" stroke="#8195b1" stroke-width="1.5"/>
+  <path d="M924 608H1176V664H924ZM1008 616V664M1092 616V664" fill="none" stroke="#8195b1" stroke-width="1.5"/>
+  <rect x="924" y="608" width="252" height="8" fill="#dce6f6" stroke="#8195b1"/>
+  <text x="1050" y="642" class="label" style="font-size:10px;fill:#586f95">TENDA DE BRINQUEDOS</text>
+
+  <path d="M30 600V670H95V600H62M30 600H49" class="wall"/>
+  <path d="M49 600V615M49 600A15 15 0 0 1 64 615" class="door" stroke-dasharray="3 2"/>
+  <text x="62" y="689" class="label" style="font-size:10px">ENTRADA PRINCIPAL</text>
+</svg>

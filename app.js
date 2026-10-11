@@ -1,5 +1,6 @@
 import qrcode from "./vendor/qrcode.mjs";
 import { buildPixPayload } from "./pix.js";
+import { VENUE_PLAN, VENUE_ZONES, getTablePosition } from "./venue-layout.js";
 
 const EVENT_DATE = new Date("2026-12-31T12:00:00-03:00");
 const CONFIG = window.APP_CONFIG ?? {};
@@ -15,7 +16,7 @@ const state = {
   step: 1,
   selectedSeats: new Set(),
   unavailableSeats: new Set(),
-  zoom: 1,
+  zoom: .75,
   participants: {},
   freeChildren: [],
   reservation: null,
@@ -168,17 +169,23 @@ function createTable(area, tableNumber) {
 
 function renderMap() {
   Object.entries(AREAS).forEach(([area, config]) => {
+    const bounds = VENUE_ZONES[area];
+    const zone = document.querySelector(`[data-zone="${area}"]`);
+    zone.style.left = `${bounds.x / VENUE_PLAN.width * 100}%`;
+    zone.style.top = `${bounds.y / VENUE_PLAN.height * 100}%`;
+    zone.style.width = `${bounds.width / VENUE_PLAN.width * 100}%`;
+    zone.style.height = `${bounds.height / VENUE_PLAN.height * 100}%`;
     const grid = document.getElementById(config.grid);
+    grid.replaceChildren();
     for (let tableNumber = 1; tableNumber <= config.count; tableNumber += 1) {
-      if (area === "salao" && tableNumber === 17) {
-        const islands = document.createElement("div");
-        islands.className = "hot-islands";
-        islands.innerHTML = "<span>Ilha quente 1</span><span>Ilha quente 2</span>";
-        grid.append(islands);
-      }
-      grid.append(createTable(area, tableNumber));
+      const position = getTablePosition(area, tableNumber);
+      const table = createTable(area, tableNumber);
+      table.style.left = `${position.x / bounds.width * 100}%`;
+      table.style.top = `${position.y / bounds.height * 100}%`;
+      grid.append(table);
     }
   });
+  setZoom(state.zoom);
 }
 
 function toggleSeat(button) {
@@ -225,18 +232,34 @@ function renderSelection() {
 }
 
 function filterArea(area) {
-  document.querySelectorAll(".area-tabs button").forEach((button) => button.classList.toggle("active", button.dataset.area === area));
+  document.querySelectorAll(".area-tabs button").forEach((button) => {
+    const active = button.dataset.area === area;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
   document.querySelectorAll(".zone").forEach((zone) => { zone.hidden = area !== "all" && zone.dataset.zone !== area; });
-  const map = document.getElementById("venue-map");
-  map.style.gridTemplateColumns = area === "all" ? "minmax(690px, 2fr) minmax(340px, 1fr)" : "minmax(760px, 1fr)";
-  map.style.width = area === "all" ? "1100px" : "800px";
-  const areas = { salao: "salao", varanda: "varanda", expansao: "expansao" };
-  document.querySelectorAll(".zone").forEach((zone) => { zone.style.gridArea = area === "all" ? areas[zone.dataset.zone] : "auto"; });
+  // Filtering changes visibility and scroll position, never the physical layout.
+  const bounds = VENUE_ZONES[area] ?? { x: 0, y: 0 };
+  document.querySelector(".map-viewport").scrollTo({
+    left: Math.max(0, bounds.x * VENUE_PLAN.displayScale * state.zoom - 12),
+    top: Math.max(0, bounds.y * VENUE_PLAN.displayScale * state.zoom - 12),
+  });
 }
 
 function setZoom(nextZoom) {
-  state.zoom = Math.min(1.35, Math.max(.75, nextZoom));
-  document.getElementById("venue-map").style.setProperty("--map-scale", state.zoom);
+  const viewport = document.querySelector(".map-viewport");
+  const previousZoom = state.zoom;
+  const centerX = (viewport.scrollLeft + viewport.clientWidth / 2) / previousZoom;
+  const centerY = (viewport.scrollTop + viewport.clientHeight / 2) / previousZoom;
+  state.zoom = Math.min(1.6, Math.max(.45, nextZoom));
+  const surface = document.getElementById("map-surface");
+  surface.style.setProperty("--map-width", `${VENUE_PLAN.width * VENUE_PLAN.displayScale}px`);
+  surface.style.setProperty("--map-height", `${VENUE_PLAN.height * VENUE_PLAN.displayScale}px`);
+  surface.style.setProperty("--map-scale", state.zoom);
+  viewport.scrollTo({
+    left: Math.max(0, centerX * state.zoom - viewport.clientWidth / 2),
+    top: Math.max(0, centerY * state.zoom - viewport.clientHeight / 2),
+  });
 }
 
 function maskCpf(value) {

@@ -100,11 +100,11 @@
             </div>
 
             <div class="map-toolbar">
-              <div class="area-tabs" role="tablist" aria-label="Filtrar por área">
-                <button class="active" data-area="all" type="button">Todos</button>
-                <button data-area="salao" type="button">Salão</button>
-                <button data-area="varanda" type="button">Varanda</button>
-                <button data-area="expansao" type="button">Expansão</button>
+              <div class="area-tabs" role="group" aria-label="Filtrar por área">
+                <button class="active" data-area="all" type="button" aria-pressed="true">Todos</button>
+                <button data-area="salao" type="button" aria-pressed="false">Salão</button>
+                <button data-area="varanda" type="button" aria-pressed="false">Varanda</button>
+                <button data-area="expansao" type="button" aria-pressed="false">Expansão</button>
               </div>
               <div class="zoom-controls" aria-label="Zoom do mapa">
                 <button id="zoom-out" type="button" aria-label="Diminuir mapa">−</button>
@@ -120,26 +120,26 @@
 
             <div id="database-status" class="database-status" role="status">Conectando ao mapa de lugares…</div>
 
-            <div class="map-viewport">
-              <div class="venue-map" id="venue-map">
-                <section class="zone zone-salao" data-zone="salao">
-                  <div class="zone-title"><h3>Salão principal</h3><span>32 mesas · 256 lugares</span></div>
-                  <div class="service-strip"><span>Cozinha e apoio</span><span>Bebidas</span></div>
-                  <div class="tables-grid salon-grid" id="salao-grid"></div>
-                </section>
+            <p class="map-hint" id="map-hint">Varanda abaixo do salão · Expansão à direita. Arraste o mapa para explorar e use + para ampliar as cadeiras.</p>
+            <div class="map-viewport" tabindex="0" role="region" aria-label="Croqui interativo do Salão Triunfo" aria-describedby="map-hint">
+              <div class="map-surface" id="map-surface">
+                <div class="venue-map" id="venue-map">
+                  <img class="venue-structure" src="./assets/venue-plan.svg" alt="Croqui do Salão Triunfo: entrada e hall à esquerda; varanda abaixo do salão, com passagem central e doces junto à parede; expansão à direita, com estação de suco e banda; tenda de brinquedos na área externa." draggable="false" />
+                  <section class="zone zone-salao" data-zone="salao" aria-labelledby="salao-title">
+                    <div class="zone-title"><h3 id="salao-title">Salão principal</h3><span>32 mesas · 256 lugares</span></div>
+                    <div class="tables-grid salon-grid" id="salao-grid"></div>
+                  </section>
 
-                <section class="zone zone-varanda" data-zone="varanda">
-                  <div class="zone-title"><h3>Varanda</h3><span>12 mesas · 96 lugares</span></div>
-                  <div class="dessert-table">Mesa de doces</div>
-                  <div class="tables-grid veranda-grid" id="varanda-grid"></div>
-                </section>
+                  <section class="zone zone-varanda" data-zone="varanda" aria-labelledby="varanda-title">
+                    <div class="zone-title"><h3 id="varanda-title">Varanda externa</h3><span>12 mesas · 96 lugares</span></div>
+                    <div class="tables-grid veranda-grid" id="varanda-grid"></div>
+                  </section>
 
-                <section class="zone zone-expansao" data-zone="expansao">
-                  <div class="zone-title"><h3>Expansão coberta</h3><span>6 mesas · 48 lugares</span></div>
-                  <div class="expansion-features"><span>Estação de suco</span><span>Banda</span></div>
-                  <div class="tables-grid expansion-grid" id="expansao-grid"></div>
-                  <div class="tent">Tenda de brinquedos</div>
-                </section>
+                  <section class="zone zone-expansao" data-zone="expansao" aria-labelledby="expansao-title">
+                    <div class="zone-title"><h3 id="expansao-title">Expansão coberta</h3><span>6 mesas · 48 lugares</span></div>
+                    <div class="tables-grid expansion-grid" id="expansao-grid"></div>
+                  </section>
+                </div>
               </div>
             </div>
 
