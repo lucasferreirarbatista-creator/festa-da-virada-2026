@@ -58,7 +58,10 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           mkdir -p backup/database backup/storage
-          pg_dump "$SUPABASE_DB_URL" \
+          # O Session Pooler exige o project ref no nome do usuario.
+          # Normaliza automaticamente URLs copiadas com apenas "postgres".
+          db_url="${SUPABASE_DB_URL/postgresql:\/\/postgres:/postgresql:\/\/postgres.cbkwmecokmyaxakdmjkc:}"
+          pg_dump "$db_url" \
             --format=custom \
             --no-owner \
             --no-acl \
