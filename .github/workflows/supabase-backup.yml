@@ -1,0 +1,112 @@
+name: Backup do Supabase
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Minuto 17 reduz a chance de atraso por congestionamento no inicio da hora.
+    - cron: "17 6 15 12 *"
+      timezone: "America/Sao_Paulo"
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Banco e comprovantes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Verificar a data programada
+        id: schedule
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" || "$(date -u +%Y)" == "2026" ]]; then
+            echo "run_backup=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_backup=false" >> "$GITHUB_OUTPUT"
+            echo "Backup ignorado: a rotina automatica foi programada somente para 15/12/2026."
+          fi
+
+      - name: Baixar o codigo
+        if: steps.schedule.outputs.run_backup == 'true'
+        uses: actions/checkout@v4
+
+      - name: Validar os segredos obrigatorios
+        if: steps.schedule.outputs.run_backup == 'true'
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+        run: |
+          [[ -n "$SUPABASE_DB_URL" ]] || { echo "Secret SUPABASE_DB_URL ausente."; exit 1; }
+          [[ -n "$SUPABASE_SERVICE_ROLE_KEY" ]] || { echo "Secret SUPABASE_SERVICE_ROLE_KEY ausente."; exit 1; }
+          [[ -n "$BACKUP_ENCRYPTION_PASSWORD" ]] || { echo "Secret BACKUP_ENCRYPTION_PASSWORD ausente."; exit 1; }
+
+      - name: Instalar o cliente PostgreSQL
+        if: steps.schedule.outputs.run_backup == 'true'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Exportar o banco de dados
+        if: steps.schedule.outputs.run_backup == 'true'
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p backup/database backup/storage
+          pg_dump "$SUPABASE_DB_URL" \
+            --format=custom \
+            --no-owner \
+            --no-acl \
+            --file=backup/database/supabase.dump
+
+      - name: Exportar os comprovantes privados
+        if: steps.schedule.outputs.run_backup == 'true'
+        shell: bash
+        env:
+          SUPABASE_URL: https://cbkwmecokmyaxakdmjkc.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          STORAGE_BUCKET: payment-proofs
+          STORAGE_OUTPUT_DIR: backup/storage/payment-proofs
+        run: node scripts/backup-supabase-storage.mjs
+
+      - name: Registrar informacoes do backup
+        if: steps.schedule.outputs.run_backup == 'true'
+        shell: bash
+        run: |
+          {
+            echo "Criado em UTC: $(date -u --iso-8601=seconds)"
+            echo "Repositorio: $GITHUB_REPOSITORY"
+            echo "Commit: $GITHUB_SHA"
+            echo "Banco: database/supabase.dump"
+            echo "Arquivos: storage/payment-proofs/"
+          } > backup/LEIA-ME.txt
+
+      - name: Compactar e criptografar
+        if: steps.schedule.outputs.run_backup == 'true'
+        shell: bash
+        env:
+          BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+        run: |
+          backup_name="festa-da-virada-supabase-$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+          tar -czf "${backup_name}.tar.gz" backup
+          openssl enc -aes-256-cbc -salt -pbkdf2 \
+            -in "${backup_name}.tar.gz" \
+            -out "${backup_name}.tar.gz.enc" \
+            -pass env:BACKUP_ENCRYPTION_PASSWORD
+          rm "${backup_name}.tar.gz"
+          echo "BACKUP_FILE=${backup_name}.tar.gz.enc" >> "$GITHUB_ENV"
+
+      - name: Guardar o backup criptografado
+        if: steps.schedule.outputs.run_backup == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-supabase-15-12-2026
+          path: ${{ env.BACKUP_FILE }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
