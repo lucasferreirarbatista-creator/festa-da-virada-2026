@@ -66,3 +66,31 @@ python3 -m http.server 4173
 ```
 
 Depois abra `http://localhost:4173`.
+
+## Backup programado para 15/12/2026
+
+O workflow `.github/workflows/supabase-backup.yml` executa às 06h17 de
+15/12/2026, no horário de Brasília. Ele exporta o banco PostgreSQL e os arquivos
+privados do bucket `payment-proofs`, criptografa o pacote e o mantém nos
+artefatos do GitHub por 90 dias. Também pode ser executado manualmente em
+**Actions → Backup do Supabase → Run workflow**.
+
+Cadastre estes segredos em **GitHub → Settings → Secrets and variables → Actions**:
+
+- `SUPABASE_DB_URL`: URI de conexão exibida em **Supabase → Connect**. Prefira a
+  conexão **Session pooler**, compatível com IPv4.
+- `SUPABASE_SERVICE_ROLE_KEY`: chave secreta `service_role` disponível nas
+  configurações de API do Supabase. Nunca coloque essa chave em arquivos do site.
+- `BACKUP_ENCRYPTION_PASSWORD`: senha forte e exclusiva usada para criptografar
+  o arquivo. Guarde-a fora do GitHub; sem ela não será possível restaurar o backup.
+
+Faça uma execução manual antes da data programada para validar os segredos. Para
+descriptografar um pacote baixado:
+
+```bash
+export BACKUP_ENCRYPTION_PASSWORD='sua-senha'
+openssl enc -d -aes-256-cbc -pbkdf2 \
+  -in festa-da-virada-supabase-DATA.tar.gz.enc \
+  -out backup.tar.gz \
+  -pass env:BACKUP_ENCRYPTION_PASSWORD
+```
