@@ -12,6 +12,9 @@ const expiryFix = readFileSync(new URL("../supabase/migrations/010_fix_expiry_ca
 const recovery = readFileSync(new URL("../supabase/migrations/011_reservation_recovery.sql", import.meta.url), "utf8");
 const flexiblePayments = readFileSync(new URL("../supabase/migrations/012_flexible_payments_and_lookup.sql", import.meta.url), "utf8");
 const indexHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const authRedirect = readFileSync(new URL("../auth-redirect.js", import.meta.url), "utf8");
+const passwordPage = readFileSync(new URL("../definir-senha.html", import.meta.url), "utf8");
+const passwordFlow = readFileSync(new URL("../definir-senha.js", import.meta.url), "utf8");
 
 assert.match(migration, /full_seat_limit smallint not null default 350/);
 assert.match(migration, /half_seat_limit smallint not null default 50/);
@@ -57,5 +60,15 @@ assert.match(indexHtml, /Quanto você deseja pagar agora/);
 assert.match(indexHtml, /Consulte pelo CPF do responsável ou/);
 assert.match(indexHtml, /id="payment-paid"/);
 assert.match(indexHtml, /id="payment-balance"/);
+assert.match(indexHtml, /auth-redirect\.js/);
+assert.match(adminHtml, /definir-senha\.html\?modo=recuperar/);
+assert.match(authRedirect, /definir-senha\.html/);
+assert.match(authRedirect, /access_token/);
+assert.match(passwordPage, /Criar minha senha/);
+assert.match(passwordPage, /Solicitar novo acesso/);
+assert.match(passwordFlow, /auth\/v1\/verify/);
+assert.match(passwordFlow, /auth\/v1\/user/);
+assert.match(passwordFlow, /auth\/v1\/recover/);
+assert.match(passwordFlow, /fv26_admin_session/);
 
 console.log("Feature contract tests passed.");

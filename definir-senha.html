@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071a3d" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Criar senha · Festa da Virada</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./admin.css" />
+  </head>
+  <body>
+    <header class="admin-header">
+      <a class="brand" href="./">
+        <img class="brand-symbol" src="./assets/iba-symbol.png" alt="" />
+        <span class="brand-copy"><strong>Festa da Virada</strong><span>Igreja Batista Atos</span></span>
+      </a>
+    </header>
+
+    <main>
+      <section class="login-view">
+        <div class="login-card">
+          <div id="loading-view">
+            <p class="eyebrow">Acesso da organização</p>
+            <h1>Validando acesso</h1>
+            <p class="auth-status">Aguarde enquanto conferimos o link recebido por e-mail.</p>
+          </div>
+
+          <div id="password-view" hidden>
+            <p class="eyebrow">Acesso da organização</p>
+            <h1>Criar minha senha</h1>
+            <p class="login-copy">Escolha uma senha pessoal para acessar o painel administrativo. A organização não terá acesso a ela.</p>
+            <form id="password-form" novalidate>
+              <label>
+                Nova senha
+                <input id="new-password" type="password" autocomplete="new-password" minlength="8" required />
+                <span class="password-hint">Utilize pelo menos 8 caracteres.</span>
+              </label>
+              <label>
+                Confirmar nova senha
+                <input id="confirm-password" type="password" autocomplete="new-password" minlength="8" required />
+              </label>
+              <p id="password-error" class="form-error" role="alert" hidden></p>
+              <button id="password-button" class="primary-button" type="submit">Criar senha e acessar</button>
+            </form>
+          </div>
+
+          <div id="recovery-view" hidden>
+            <p class="eyebrow">Recuperação de acesso</p>
+            <h1>Solicitar novo acesso</h1>
+            <p class="login-copy">Informe o e-mail cadastrado. Enviaremos um link seguro para você criar uma nova senha.</p>
+            <form id="recovery-form" novalidate>
+              <label>
+                E-mail
+                <input id="recovery-email" type="email" autocomplete="email" required />
+              </label>
+              <p id="recovery-error" class="form-error" role="alert" hidden></p>
+              <p id="recovery-success" class="form-success" role="status" hidden></p>
+              <button id="recovery-button" class="primary-button" type="submit">Enviar link de acesso</button>
+            </form>
+            <a class="back-link" href="./admin.html">← Voltar para entrar</a>
+          </div>
+
+          <div id="invalid-view" hidden>
+            <p class="eyebrow">Link inválido</p>
+            <h1>Não foi possível continuar</h1>
+            <p id="invalid-message" class="login-copy">Este link é inválido ou já expirou.</p>
+            <div class="auth-actions">
+              <a class="primary-button" href="./definir-senha.html?modo=recuperar">Solicitar novo link</a>
+              <a class="secondary-button" href="./admin.html">Voltar para entrar</a>
+            </div>
+          </div>
+
+          <div id="success-view" hidden>
+            <p class="eyebrow">Senha criada</p>
+            <h1>Acesso preparado</h1>
+            <p class="form-success">Sua senha foi criada com segurança. Você já pode acessar o painel administrativo.</p>
+            <div class="auth-actions">
+              <a class="primary-button" href="./admin.html">Acessar o painel</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./config.js"></script>
+    <script src="./definir-senha.js" defer></script>
+  </body>
+</html>

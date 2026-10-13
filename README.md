@@ -46,16 +46,21 @@ Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do
 
 ## Primeiro administrador
 
-1. Crie o usuário em **Authentication → Users → Add user** no Supabase.
-2. Copie o UUID do usuário criado.
-3. Execute no SQL Editor, substituindo os valores:
+1. Em **Authentication → URL Configuration**, mantenha `https://festa-da-virada-2026.vercel.app/` como **Site URL** e adicione `https://festa-da-virada-2026.vercel.app/definir-senha.html` em **Redirect URLs**.
+2. Crie o usuário em **Authentication → Users → Add user → Send invitation** no Supabase. Não defina a senha pela pessoa.
+3. A pessoa deve abrir o convite recebido por e-mail e criar a própria senha no site.
+4. Copie o UUID do usuário criado.
+5. Execute no SQL Editor, substituindo os valores:
 
 ```sql
-insert into public.admin_users (user_id, display_name)
-values ('UUID-DO-USUARIO', 'Nome da pessoa');
+insert into public.admin_users (user_id, display_name, active)
+values ('UUID-DO-USUARIO', 'Nome da pessoa', true)
+on conflict (user_id) do update
+set display_name = excluded.display_name,
+    active = true;
 ```
 
-Depois, acesse `/admin.html` com o e-mail e a senha cadastrados.
+Depois, acesse `/admin.html` com o e-mail e a senha criada pela própria pessoa. O link **Esqueci minha senha** envia um acesso de recuperação para o e-mail informado.
 
 ## Visualização local
 

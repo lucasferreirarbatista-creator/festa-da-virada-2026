@@ -88,7 +88,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--gold); box-shado
 .danger-button { border: 1px solid var(--red); background: white; color: var(--red); }
 button:disabled { opacity: .55; cursor: wait; }
 .back-link { display: inline-block; margin-top: 24px; color: var(--muted); font-size: 14px; }
+.password-link { display: inline-block; margin-top: 18px; color: var(--navy); font-size: 14px; font-weight: 700; }
+.password-link + .back-link { display: block; margin-top: 16px; }
 .form-error { margin: -4px 0 0; color: var(--red); font-size: 14px; }
+.form-success { margin: -4px 0 0; padding: 13px 14px; border-radius: 12px; color: var(--green); background: var(--green-bg); font-size: 14px; line-height: 1.45; }
+.auth-status { margin-bottom: 20px; padding: 14px; border-radius: 12px; color: var(--muted); background: var(--cream); font-size: 14px; line-height: 1.5; }
+.auth-actions { display: grid; gap: 10px; }
+.auth-actions .primary-button, .auth-actions .secondary-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.password-hint { margin: -8px 0 0; color: var(--muted); font-size: 12px; font-weight: 400; }
 
 .checkin-card { width: min(620px, 100%); }
 .checkin-card .login-copy { margin-bottom: 20px; }
