@@ -565,11 +565,25 @@ function renderPayment() {
   document.getElementById("cash-panel").hidden = true;
   state.paymentStarted = false;
   const isBalance = Number(state.reservation.paid_amount ?? 0) > 0;
-  document.querySelector("#payment-options h3").textContent = isBalance ? "Como você deseja quitar o saldo?" : "Como você deseja pagar?";
+  document.querySelector("#payment-options h3").textContent = isBalance ? "Escolha o valor e a forma de pagamento" : "Como você deseja pagar?";
   document.querySelectorAll('[name="payment-plan"]').forEach(input => { input.closest(".choice-card").hidden = isBalance; });
+  const amountField = document.getElementById("payment-amount-field");
+  const amountInput = document.getElementById("payment-amount");
+  amountField.hidden = !isBalance;
+  amountInput.value = isBalance ? balance.toFixed(2).replace(".", ",") : "";
   showPaymentError("");
   startCountdown();
   updateProgress();
+}
+
+function parsePaymentAmount(value) {
+  const normalized = String(value ?? "").trim().replace(/\s/g, "").replace(/^R\$/i, "");
+  if (!normalized) return NaN;
+  const decimal = normalized.includes(",")
+    ? normalized.replace(/\./g, "").replace(",", ".")
+    : normalized;
+  const amount = Number(decimal);
+  return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : NaN;
 }
 
 function renderPixAmount(amount) {
@@ -586,12 +600,21 @@ async function startPayment() {
   if (!state.reservation || !state.reservationAccessToken) return;
   state.paymentPlan = document.querySelector('[name="payment-plan"]:checked').value;
   state.paymentMethod = document.querySelector('[name="payment-method"]:checked').value;
+  const balance = Number(state.reservation.balance_amount ?? Math.max(Number(state.reservation.total_amount) - Number(state.reservation.paid_amount ?? 0), 0));
+  const isBalance = Number(state.reservation.paid_amount ?? 0) > 0;
+  const requestedAmount = isBalance ? parsePaymentAmount(document.getElementById("payment-amount").value) : null;
+  if (isBalance && (!Number.isFinite(requestedAmount) || requestedAmount < 1 || requestedAmount > balance)) {
+    showPaymentError(`Informe um valor entre ${money.format(1)} e ${money.format(balance)}.`);
+    document.getElementById("payment-amount").focus();
+    return;
+  }
   const button = document.getElementById("start-payment-button");
   button.disabled = true;
   showPaymentError("");
   try {
     const result = await supabaseRequest("rpc/start_payment", { method: "POST", body: JSON.stringify({
       p_access_token: state.reservationAccessToken, p_payment_plan: state.paymentPlan, p_payment_method: state.paymentMethod,
+      p_payment_amount: requestedAmount,
     }) });
     state.reservation = { ...state.reservation, ...result };
     state.paymentDue = Number(result.amount_due);
@@ -608,7 +631,9 @@ async function startPayment() {
       updateProgress();
     }
   } catch (error) {
-    showPaymentError("Não foi possível iniciar o pagamento. Atualize a reserva e tente novamente.");
+    showPaymentError(/invalid_payment_amount/.test(error.message ?? "")
+      ? "O valor informado precisa estar entre R$ 1,00 e o saldo restante."
+      : "Não foi possível iniciar o pagamento. Atualize a reserva e tente novamente.");
     console.error("Start payment error", error);
   } finally { button.disabled = false; }
 }
@@ -674,6 +699,7 @@ async function submitPayment() {
           p_access_token: state.reservationAccessToken,
           p_storage_path: storagePath,
           p_original_filename: state.proofFile.name,
+          p_payment_amount: state.paymentDue,
         }),
       });
     state.reservation = { ...state.reservation, ...result };
@@ -822,7 +848,7 @@ function openLookupDialog() {
   const dialog = document.getElementById("lookup-dialog");
   document.getElementById("lookup-error").hidden = true;
   dialog.showModal();
-  setTimeout(() => document.getElementById("lookup-protocol").focus(), 0);
+  setTimeout(() => document.getElementById("lookup-cpf").focus(), 0);
 }
 
 async function recoverReservation(event) {
@@ -832,8 +858,10 @@ async function recoverReservation(event) {
   const errorBox = document.getElementById("lookup-error");
   const button = document.getElementById("lookup-submit");
   errorBox.hidden = true;
-  if (!protocol || !validCpf(cpf)) {
-    errorBox.textContent = "Confira o protocolo e informe um CPF válido.";
+  const hasProtocol = /^FV26-[A-F0-9]{8}$/.test(protocol);
+  const hasCpf = digits(cpf).length > 0;
+  if ((!hasProtocol && !hasCpf) || (hasCpf && !validCpf(cpf)) || (protocol && !hasProtocol)) {
+    errorBox.textContent = "Informe um CPF válido ou o protocolo da inscrição.";
     errorBox.hidden = false;
     return;
   }
@@ -842,16 +870,19 @@ async function recoverReservation(event) {
   try {
     const result = await supabaseRequest("rpc/recover_reservation_access", {
       method: "POST",
-      body: JSON.stringify({ p_protocol: protocol, p_buyer_cpf: digits(cpf) }),
+      body: JSON.stringify({ p_protocol: hasProtocol ? protocol : null, p_buyer_cpf: hasCpf ? digits(cpf) : null }),
     });
     saveAccess(result.access_token);
     document.getElementById("lookup-dialog").close();
     await restoreReservation(result.access_token);
   } catch (error) {
     const inactive = /reservation_not_active/.test(error.message ?? "");
-    errorBox.textContent = inactive
+    const multiple = /multiple_reservations_found/.test(error.message ?? "");
+    errorBox.textContent = multiple
+      ? "Encontramos mais de uma inscrição ativa neste CPF. Informe também o protocolo para continuar."
+      : inactive
       ? "Esta inscrição foi cancelada, rejeitada ou expirou. Fale com a organização para receber ajuda."
-      : "Não encontramos uma inscrição ativa com esse protocolo e CPF.";
+      : "Não encontramos uma inscrição ativa com os dados informados.";
     errorBox.hidden = false;
     if (!document.getElementById("lookup-dialog").open) document.getElementById("lookup-dialog").showModal();
     console.error("Reservation recovery error", error);
@@ -869,6 +900,10 @@ async function init() {
   document.getElementById("lookup-close").addEventListener("click", () => document.getElementById("lookup-dialog").close());
   document.getElementById("lookup-form").addEventListener("submit", event => { void recoverReservation(event); });
   document.getElementById("lookup-cpf").addEventListener("input", event => { event.target.value = maskCpf(event.target.value); });
+  document.getElementById("payment-amount").addEventListener("blur", event => {
+    const amount = parsePaymentAmount(event.target.value);
+    if (Number.isFinite(amount)) event.target.value = amount.toFixed(2).replace(".", ",");
+  });
   document.getElementById("resume-saved-button").addEventListener("click", () => { void restoreReservation(); });
   document.querySelectorAll(".area-tabs button").forEach((button) => button.addEventListener("click", () => filterArea(button.dataset.area)));
   document.getElementById("zoom-in").addEventListener("click", () => setZoom(state.zoom + .1));

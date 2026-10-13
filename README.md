@@ -36,13 +36,13 @@ Aplicação web para inscrição, escolha de cadeiras e conferência de pagament
 
 ## Ativação da versão atual
 
-1. Execute `009_payments_tickets_and_capacity.sql`, `010_fix_expiry_cancelled_at.sql` e `011_reservation_recovery.sql` no SQL Editor do Supabase.
+1. Execute `009_payments_tickets_and_capacity.sql`, `010_fix_expiry_cancelled_at.sql`, `011_reservation_recovery.sql` e `012_flexible_payments_and_lookup.sql` no SQL Editor do Supabase.
 2. Publique os arquivos do site.
 3. Faça uma reserva de teste com entrada de 30%, aprove o pagamento no painel e valide o QR Code.
 
 ## Migrações
 
-Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do Supabase. Em uma base já configurada até a migração 010, execute apenas `011_reservation_recovery.sql`.
+Execute os arquivos de `supabase/migrations` em ordem numérica no SQL Editor do Supabase. Em uma base já configurada até a migração 011, execute apenas `012_flexible_payments_and_lookup.sql`.
 
 ## Primeiro administrador
 

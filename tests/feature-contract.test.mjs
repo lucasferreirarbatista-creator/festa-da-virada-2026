@@ -10,6 +10,7 @@ const admin = readFileSync(new URL("../admin.js", import.meta.url), "utf8");
 const adminHtml = readFileSync(new URL("../admin.html", import.meta.url), "utf8");
 const expiryFix = readFileSync(new URL("../supabase/migrations/010_fix_expiry_cancelled_at.sql", import.meta.url), "utf8");
 const recovery = readFileSync(new URL("../supabase/migrations/011_reservation_recovery.sql", import.meta.url), "utf8");
+const flexiblePayments = readFileSync(new URL("../supabase/migrations/012_flexible_payments_and_lookup.sql", import.meta.url), "utf8");
 const indexHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 assert.match(migration, /full_seat_limit smallint not null default 350/);
@@ -41,10 +42,19 @@ assert.match(recovery, /recover_reservation_access/);
 assert.match(recovery, /upper\(protocol\) = upper\(trim\(p_protocol\)\)/);
 assert.match(recovery, /buyer_cpf = clean_cpf/);
 assert.match(recovery, /digest\(new_access_token, 'sha256'\)/);
+assert.match(flexiblePayments, /payment_kind in \('full', 'deposit', 'installment', 'balance'\)/);
+assert.match(flexiblePayments, /p_payment_amount numeric default null/);
+assert.match(flexiblePayments, /multiple_reservations_found/);
+assert.match(flexiblePayments, /not has_protocol and not has_cpf/);
+assert.match(flexiblePayments, /FV26-\[0-9A-F\]\{8\}/);
+assert.match(app, /p_payment_amount: requestedAmount/);
+assert.match(app, /p_payment_amount: state\.paymentDue/);
 assert.match(app, /showSavedReservationShortcut/);
 assert.doesNotMatch(app, /await restoreReservation\(\);\n  setInterval/);
 assert.match(indexHtml, /Consultar inscrição \/ pagar saldo/);
 assert.match(indexHtml, /CPF do responsável/);
+assert.match(indexHtml, /Quanto você deseja pagar agora/);
+assert.match(indexHtml, /Consulte pelo CPF do responsável ou/);
 assert.match(indexHtml, /id="payment-paid"/);
 assert.match(indexHtml, /id="payment-balance"/);
 

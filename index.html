@@ -230,6 +230,11 @@
                 <label class="choice-card"><input type="radio" name="payment-method" value="pix" checked><span><strong>Pix</strong><small>Envie o comprovante.</small></span></label>
                 <label class="choice-card"><input type="radio" name="payment-method" value="cash"><span><strong>Dinheiro</strong><small>Confirmação em até 48 horas.</small></span></label>
               </div>
+              <div class="payment-amount-field" id="payment-amount-field" hidden>
+                <label for="payment-amount">Quanto você deseja pagar agora?</label>
+                <div class="currency-field"><span>R$</span><input id="payment-amount" inputmode="decimal" autocomplete="off" placeholder="0,00" /></div>
+                <small>Informe um valor entre R$ 1,00 e o saldo restante. Você poderá pagar o restante em outras ocasiões até 10/12/2026.</small>
+              </div>
               <button id="start-payment-button" class="primary-button" type="button">Continuar para o pagamento</button>
             </section>
             <div class="payment-grid" id="payment-content" hidden>
@@ -304,12 +309,13 @@
         <button class="dialog-close" id="lookup-close" type="button" aria-label="Fechar">×</button>
         <p class="eyebrow dark">Minha inscrição</p>
         <h2 id="lookup-title">Consultar ou pagar saldo</h2>
-        <p>Informe o protocolo e o CPF do responsável pela inscrição.</p>
-        <label>Protocolo
-          <input id="lookup-protocol" autocomplete="off" placeholder="FV26-XXXXXXXX" required />
-        </label>
+        <p>Consulte pelo CPF do responsável ou, se preferir, use o protocolo da inscrição.</p>
         <label>CPF do responsável
-          <input id="lookup-cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" required />
+          <input id="lookup-cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" />
+        </label>
+        <div class="lookup-separator"><span>ou</span></div>
+        <label>Protocolo
+          <input id="lookup-protocol" autocomplete="off" placeholder="FV26-XXXXXXXX" />
         </label>
         <div id="lookup-error" class="form-errors" role="alert" hidden></div>
         <button class="primary-button" id="lookup-submit" type="submit">Consultar inscrição</button>
