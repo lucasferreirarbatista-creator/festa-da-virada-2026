@@ -572,8 +572,26 @@ function renderPayment() {
   amountField.hidden = !isBalance;
   amountInput.value = isBalance ? balance.toFixed(2).replace(".", ",") : "";
   showPaymentError("");
+  updateTicketAccess();
   startCountdown();
   updateProgress();
+}
+
+function ticketsAreAvailable() {
+  return ["pending_review", "partial", "paid"].includes(state.reservation?.payment_status);
+}
+
+function updateTicketAccess() {
+  const available = ticketsAreAvailable();
+  const conclusionButton = document.getElementById("open-tickets-button");
+  const paymentAccess = document.getElementById("reservation-ticket-access");
+  if (conclusionButton) conclusionButton.hidden = !available;
+  if (paymentAccess) paymentAccess.hidden = !available;
+}
+
+function openTickets() {
+  if (!state.reservationAccessToken || !ticketsAreAvailable()) return;
+  window.location.href = `./tickets.html#${state.reservationAccessToken}`;
 }
 
 function parsePaymentAmount(value) {
@@ -663,8 +681,7 @@ function renderConclusion() {
   document.getElementById("conclusion-status").textContent = isConfirmed ? "Pagamento quitado" : isPartial ? "Entrada paga · saldo pendente" : isCash ? "Aguardando pagamento em dinheiro" : "Aguardando conferência";
   const seats = state.reservation.seats?.map((seat) => seat.code) ?? selectedCodes();
   document.getElementById("conclusion-seats").innerHTML = seats.map((code) => `<span class="seat-badge">${escapeHtml(code)}</span>`).join("");
-  const tickets = document.getElementById("open-tickets-button");
-  tickets.hidden = !["pending_review", "partial", "paid"].includes(state.reservation.payment_status);
+  updateTicketAccess();
   document.getElementById("pay-balance-button").hidden = !isPartial;
 }
 
@@ -912,7 +929,8 @@ async function init() {
   document.getElementById("back-button").addEventListener("click", () => { if (state.step > 1) showStep(state.step - 1); });
   document.getElementById("add-free-child").addEventListener("click", () => { state.freeChildren.push({ name: "", birthDate: "" }); renderFreeChildren(); });
   document.getElementById("start-payment-button").addEventListener("click", () => { void startPayment(); });
-  document.getElementById("open-tickets-button").addEventListener("click", () => { window.location.href = `./tickets.html#${state.reservationAccessToken}`; });
+  document.getElementById("open-tickets-button").addEventListener("click", openTickets);
+  document.getElementById("payment-tickets-button").addEventListener("click", openTickets);
   document.getElementById("pay-balance-button").addEventListener("click", () => { renderPayment(); showStep(4); });
   document.getElementById("copy-pix-button").addEventListener("click", async () => {
     const code = document.getElementById("pix-code").value;
