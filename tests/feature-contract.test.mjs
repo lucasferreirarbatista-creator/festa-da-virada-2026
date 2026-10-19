@@ -15,6 +15,7 @@ const indexHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8"
 const authRedirect = readFileSync(new URL("../auth-redirect.js", import.meta.url), "utf8");
 const passwordPage = readFileSync(new URL("../definir-senha.html", import.meta.url), "utf8");
 const passwordFlow = readFileSync(new URL("../definir-senha.js", import.meta.url), "utf8");
+const cancellationAccounting = readFileSync(new URL("../supabase/migrations/013_fix_cancellation_accounting.sql", import.meta.url), "utf8");
 
 assert.match(migration, /full_seat_limit smallint not null default 350/);
 assert.match(migration, /half_seat_limit smallint not null default 50/);
@@ -74,5 +75,11 @@ assert.match(passwordFlow, /auth\/v1\/verify/);
 assert.match(passwordFlow, /auth\/v1\/user/);
 assert.match(passwordFlow, /auth\/v1\/recover/);
 assert.match(passwordFlow, /fv26_admin_session/);
+assert.match(cancellationAccounting, /status not in \('cancelled', 'expired', 'rejected'\)/);
+assert.match(cancellationAccounting, /sum\(least\(r\.paid_amount, r\.total_amount\)\)/);
+assert.match(cancellationAccounting, /rs\.item_status = 'active'/);
+assert.match(cancellationAccounting, /credit_due := greatest\(r\.paid_amount - new_total, 0\)/);
+assert.match(cancellationAccounting, /recognized_revenue/);
+assert.match(admin, /Crédito a remanejar/);
 
 console.log("Feature contract tests passed.");

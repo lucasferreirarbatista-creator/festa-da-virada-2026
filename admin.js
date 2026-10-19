@@ -275,6 +275,7 @@ function renderReservationDetail(data) {
     detailCard("Valor total", money.format(data.total_amount)),
     detailCard("Valor pago", money.format(data.paid_amount)),
     detailCard("Saldo", money.format(data.balance_amount)),
+    ...(Number(data.refund_due) > 0 ? [detailCard("Crédito a remanejar", money.format(data.refund_due))] : []),
     detailCard("Vencimento do saldo", Number(data.balance_amount) > 0 ? "10/12/2026" : "Quitado"),
     `<article class="detail-card"><span>Status</span><i class="status-badge status-${escapeHtml(data.status)}">${escapeHtml(statusLabels[data.status] ?? data.status)}</i></article>`,
   ].join("");
@@ -359,12 +360,14 @@ async function viewProof(proof) {
 
 async function cancelSeat(reservationSeatId) {
   const notes = window.prompt("Motivo/observação do cancelamento desta cadeira (opcional):", "");
-  if (notes === null || !window.confirm("Cancelar somente esta cadeira e recalcular o valor da reserva?")) return;
+  if (notes === null || !window.confirm("Cancelar somente esta cadeira? Ela será liberada, o valor da reserva será recalculado e eventual crédito deixará de contar na receita confirmada.")) return;
   try {
-    await rpc("admin_cancel_reservation_seat", { p_reservation_seat_id: reservationSeatId, p_notes: notes || null });
+    const result = await rpc("admin_cancel_reservation_seat", { p_reservation_seat_id: reservationSeatId, p_notes: notes || null });
     await openReservation(state.currentReservation.id);
     await Promise.all([loadDashboard(), loadReservations()]);
-    showToast("Cadeira cancelada e valor recalculado.");
+    showToast(Number(result.refund_due) > 0
+      ? `Cadeira cancelada. ${money.format(result.refund_due)} ficou registrado como crédito a remanejar.`
+      : "Cadeira cancelada, liberada e valor recalculado.");
   } catch { showToast("Não foi possível cancelar a cadeira."); }
 }
 
@@ -400,7 +403,7 @@ async function reviewReservation(action) {
   const messages = {
     confirm: `Aprovar o pagamento da inscrição ${reservation.protocol}?`,
     reject: `Rejeitar a inscrição ${reservation.protocol} e liberar as cadeiras?`,
-    cancel: `Cancelar a inscrição ${reservation.protocol} e liberar as cadeiras?`,
+    cancel: `Cancelar a inscrição ${reservation.protocol}? As cadeiras serão liberadas e ${money.format(reservation.paid_amount)} deixará de contar na receita confirmada, permanecendo registrado como crédito a remanejar.`,
   };
   if (!window.confirm(messages[action])) return;
 
